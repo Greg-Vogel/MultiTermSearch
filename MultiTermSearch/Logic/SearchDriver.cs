@@ -137,11 +137,15 @@ internal class SearchDriver
     /// <returns></returns>
     private async Task<FileResult?> ScanObjectForMatch(string filePath, SearchInputs inputs, SearchRegex[] compiledRegex)
     {
-        // 1. Check file type
+        // 1. Check if we should exclude this file because of the directory it is in
+        if (ExcludeDirectory(filePath, inputs))
+            return null;
+
+        // 2. Check file type
         if (!IsValidFileType(filePath, inputs))
             return null;
 
-        // 2. Check the file contents
+        // 3. Check the file contents
         if (inputs.Target == SearchInputs.ESearchTargets.FileContents || inputs.Target == SearchInputs.ESearchTargets.Both)
         {
             var result = await CheckFileContents(filePath, inputs, compiledRegex);
@@ -151,12 +155,30 @@ internal class SearchDriver
                 return result;
         }
 
-        // 3. Last resort... check if the file name matches
+        // 4. Last resort... check if the file name matches
         if (inputs.Target == SearchInputs.ESearchTargets.FileNames || inputs.Target == SearchInputs.ESearchTargets.Both)
             return await CheckFileNaming(filePath, inputs, compiledRegex);
 
         // If we made it here... no scenario that was checked found anything
         return null;
+    }
+
+    /// <summary>
+    /// Checks if we should exclude the current file being searched based on the directory it is in
+    ///    We know some folders are massive and pointless to search for our needs
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <param name="inputs"></param>
+    /// <returns></returns>
+    private bool ExcludeDirectory(string filePath, SearchInputs inputs)
+    {
+        if (!inputs.Options_ExcludeLargeDirectories)
+            return false;
+
+        if (filePath.Contains(@"\.git\") || filePath.Contains(@"\node-modules\"))
+            return true;
+
+        return false;
     }
 
     /// <summary>

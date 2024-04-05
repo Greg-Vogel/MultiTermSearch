@@ -145,12 +145,14 @@ public partial class MTS : Form
             Path = txtPath.Text,
             IncludeSubDir = chkIncludeSubDir.Checked,
             SearchTerms = rtSearchTerms.Lines.ToList().Where(l => !string.IsNullOrEmpty(l)).ToArray(),
-            Options_MatchWholeWord = chkWholeWord.Checked,
             Options_IgnoreCase = chkIgnoreCase.Checked,
+            Options_MatchWholeWord = chkWholeWord.Checked,
+            Options_ExcludeLargeDirectories = chkExcludeLargeDir.Checked,
             Filters_LineContainsAll = chkFilterLineContains.Checked,
             Filters_FileContainsAll = chkFilterFileContains.Checked,
             Target = GetInput_Target(),
             IncludeTypes = rtFileTypes.Lines,
+            SearcherThreadCount = 3
         };
     }
 

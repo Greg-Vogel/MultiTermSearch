@@ -34,6 +34,7 @@
             chkFilterFileContains = new CheckBox();
             chkFilterLineContains = new CheckBox();
             grpOptions = new GroupBox();
+            chkExcludeLargeDir = new CheckBox();
             chkIgnoreCase = new CheckBox();
             chkWholeWord = new CheckBox();
             label1 = new Label();
@@ -51,7 +52,6 @@
             descSearchTerms = new Label();
             txtPath = new TextBox();
             descPath = new Label();
-            resultsControl1 = new ResultsControl();
             statusStrip1 = new StatusStrip();
             ((System.ComponentModel.ISupportInitialize)scMain).BeginInit();
             scMain.Panel1.SuspendLayout();
@@ -89,11 +89,10 @@
             // 
             // scMain.Panel2
             // 
-            scMain.Panel2.Controls.Add(resultsControl1);
             scMain.Panel2.Controls.Add(statusStrip1);
             scMain.Panel2.Padding = new Padding(5, 5, 5, 0);
             scMain.Size = new Size(1415, 911);
-            scMain.SplitterDistance = 255;
+            scMain.SplitterDistance = 273;
             scMain.TabIndex = 0;
             scMain.TabStop = false;
             // 
@@ -107,7 +106,7 @@
             grpFilterPatterns.Location = new Point(11, 425);
             grpFilterPatterns.Margin = new Padding(5, 20, 3, 0);
             grpFilterPatterns.Name = "grpFilterPatterns";
-            grpFilterPatterns.Size = new Size(241, 73);
+            grpFilterPatterns.Size = new Size(259, 73);
             grpFilterPatterns.TabIndex = 24;
             grpFilterPatterns.TabStop = false;
             grpFilterPatterns.Text = "Filter Patterns";
@@ -137,26 +136,38 @@
             // grpOptions
             // 
             grpOptions.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            grpOptions.Controls.Add(chkExcludeLargeDir);
             grpOptions.Controls.Add(chkIgnoreCase);
             grpOptions.Controls.Add(chkWholeWord);
             grpOptions.FlatStyle = FlatStyle.Flat;
             grpOptions.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            grpOptions.Location = new Point(10, 342);
+            grpOptions.Location = new Point(10, 312);
             grpOptions.Margin = new Padding(5, 20, 3, 0);
             grpOptions.Name = "grpOptions";
-            grpOptions.Size = new Size(241, 75);
+            grpOptions.Size = new Size(259, 105);
             grpOptions.TabIndex = 23;
             grpOptions.TabStop = false;
             grpOptions.Text = "Search Options";
+            // 
+            // chkExcludeLargeDir
+            // 
+            chkExcludeLargeDir.AutoSize = true;
+            chkExcludeLargeDir.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            chkExcludeLargeDir.Location = new Point(18, 72);
+            chkExcludeLargeDir.Name = "chkExcludeLargeDir";
+            chkExcludeLargeDir.Size = new Size(218, 19);
+            chkExcludeLargeDir.TabIndex = 2;
+            chkExcludeLargeDir.Text = "Exclude Folders: .git | node-modules";
+            chkExcludeLargeDir.UseVisualStyleBackColor = true;
             // 
             // chkIgnoreCase
             // 
             chkIgnoreCase.AutoSize = true;
             chkIgnoreCase.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            chkIgnoreCase.Location = new Point(18, 47);
+            chkIgnoreCase.Location = new Point(18, 22);
             chkIgnoreCase.Name = "chkIgnoreCase";
             chkIgnoreCase.Size = new Size(88, 19);
-            chkIgnoreCase.TabIndex = 1;
+            chkIgnoreCase.TabIndex = 0;
             chkIgnoreCase.Text = "Ignore Case";
             chkIgnoreCase.UseVisualStyleBackColor = true;
             // 
@@ -164,10 +175,10 @@
             // 
             chkWholeWord.AutoSize = true;
             chkWholeWord.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            chkWholeWord.Location = new Point(18, 22);
+            chkWholeWord.Location = new Point(18, 47);
             chkWholeWord.Name = "chkWholeWord";
             chkWholeWord.Size = new Size(129, 19);
-            chkWholeWord.TabIndex = 0;
+            chkWholeWord.TabIndex = 1;
             chkWholeWord.Text = "Match Whole Word";
             chkWholeWord.UseVisualStyleBackColor = true;
             // 
@@ -192,7 +203,7 @@
             panel3.Margin = new Padding(5, 5, 3, 0);
             panel3.Name = "panel3";
             panel3.Padding = new Padding(1);
-            panel3.Size = new Size(241, 253);
+            panel3.Size = new Size(259, 253);
             panel3.TabIndex = 50;
             // 
             // rtFileTypes
@@ -203,7 +214,7 @@
             rtFileTypes.Location = new Point(1, 1);
             rtFileTypes.Margin = new Padding(1);
             rtFileTypes.Name = "rtFileTypes";
-            rtFileTypes.Size = new Size(239, 251);
+            rtFileTypes.Size = new Size(257, 251);
             rtFileTypes.TabIndex = 50;
             rtFileTypes.Text = ".*";
             // 
@@ -218,7 +229,7 @@
             grpSearchTarget.Location = new Point(10, 507);
             grpSearchTarget.Margin = new Padding(5, 20, 3, 0);
             grpSearchTarget.Name = "grpSearchTarget";
-            grpSearchTarget.Size = new Size(241, 98);
+            grpSearchTarget.Size = new Size(259, 98);
             grpSearchTarget.TabIndex = 20;
             grpSearchTarget.TabStop = false;
             grpSearchTarget.Text = "What To Search";
@@ -230,7 +241,7 @@
             radTargetContents.Location = new Point(18, 72);
             radTargetContents.Name = "radTargetContents";
             radTargetContents.Size = new Size(195, 19);
-            radTargetContents.TabIndex = 22;
+            radTargetContents.TabIndex = 2;
             radTargetContents.Text = "File Contents (excludes binaries)";
             radTargetContents.UseVisualStyleBackColor = true;
             // 
@@ -241,7 +252,7 @@
             radTargetFileNames.Location = new Point(18, 47);
             radTargetFileNames.Name = "radTargetFileNames";
             radTargetFileNames.Size = new Size(83, 19);
-            radTargetFileNames.TabIndex = 21;
+            radTargetFileNames.TabIndex = 1;
             radTargetFileNames.Text = "File Names";
             radTargetFileNames.UseVisualStyleBackColor = true;
             // 
@@ -253,7 +264,7 @@
             radTargetBoth.Location = new Point(18, 22);
             radTargetBoth.Name = "radTargetBoth";
             radTargetBoth.Size = new Size(50, 19);
-            radTargetBoth.TabIndex = 20;
+            radTargetBoth.TabIndex = 0;
             radTargetBoth.TabStop = true;
             radTargetBoth.Text = "Both";
             radTargetBoth.UseVisualStyleBackColor = true;
@@ -261,7 +272,7 @@
             // btnSearch
             // 
             btnSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnSearch.Location = new Point(177, 318);
+            btnSearch.Location = new Point(195, 282);
             btnSearch.Margin = new Padding(5, 5, 3, 0);
             btnSearch.Name = "btnSearch";
             btnSearch.Size = new Size(75, 23);
@@ -279,7 +290,7 @@
             panel1.Margin = new Padding(5, 5, 3, 0);
             panel1.Name = "panel1";
             panel1.Padding = new Padding(1);
-            panel1.Size = new Size(242, 194);
+            panel1.Size = new Size(260, 158);
             panel1.TabIndex = 10;
             // 
             // rtSearchTerms
@@ -290,14 +301,14 @@
             rtSearchTerms.Location = new Point(1, 1);
             rtSearchTerms.Margin = new Padding(1);
             rtSearchTerms.Name = "rtSearchTerms";
-            rtSearchTerms.Size = new Size(240, 192);
+            rtSearchTerms.Size = new Size(258, 156);
             rtSearchTerms.TabIndex = 10;
             rtSearchTerms.Text = "";
             // 
             // btnBrowse
             // 
             btnBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowse.Location = new Point(177, 57);
+            btnBrowse.Location = new Point(195, 57);
             btnBrowse.Margin = new Padding(5, 5, 3, 0);
             btnBrowse.Name = "btnBrowse";
             btnBrowse.Size = new Size(75, 23);
@@ -335,7 +346,7 @@
             txtPath.Location = new Point(10, 29);
             txtPath.Margin = new Padding(5, 5, 3, 0);
             txtPath.Name = "txtPath";
-            txtPath.Size = new Size(242, 23);
+            txtPath.Size = new Size(260, 23);
             txtPath.TabIndex = 1;
             // 
             // descPath
@@ -349,19 +360,11 @@
             descPath.TabIndex = 0;
             descPath.Text = "Path:";
             // 
-            // resultsControl1
-            // 
-            resultsControl1.Dock = DockStyle.Fill;
-            resultsControl1.Location = new Point(5, 5);
-            resultsControl1.Name = "resultsControl1";
-            resultsControl1.Size = new Size(1146, 884);
-            resultsControl1.TabIndex = 1;
-            // 
             // statusStrip1
             // 
             statusStrip1.Location = new Point(5, 889);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1146, 22);
+            statusStrip1.Size = new Size(1128, 22);
             statusStrip1.TabIndex = 0;
             statusStrip1.Text = "statusStrip1";
             // 
@@ -418,5 +421,6 @@
         private GroupBox grpFilterPatterns;
         private CheckBox chkFilterFileContains;
         private CheckBox chkFilterLineContains;
+        private CheckBox chkExcludeLargeDir;
     }
 }
