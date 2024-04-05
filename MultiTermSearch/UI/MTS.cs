@@ -10,7 +10,7 @@ public partial class MTS : Form
 {
     MtsSettings _settings = null!;
     SearchDriver _searcher = null!;
-    
+
     public MTS()
     {
         InitializeComponent();
@@ -24,10 +24,10 @@ public partial class MTS : Form
     {
         // Load last used settings and defaults from the user settings
         string settingString = Settings.Default.LastSettings;
-        if (string.IsNullOrWhiteSpace(settingString)) 
-        { 
-            _settings = new MtsSettings(); 
-            return; 
+        if (string.IsNullOrWhiteSpace(settingString))
+        {
+            _settings = new MtsSettings();
+            return;
         }
 
         // deserialize setting string into its class for easier use
@@ -37,10 +37,10 @@ public partial class MTS : Form
             _settings = settings ?? new MtsSettings();
             return;
         }
-        catch 
-        { 
-            _settings = new MtsSettings(); 
-            return; 
+        catch
+        {
+            _settings = new MtsSettings();
+            return;
         }
     }
 
@@ -114,7 +114,7 @@ public partial class MTS : Form
 
         // Start the actual search process
         if (_searcher is null)
-        { 
+        {
             _searcher = new SearchDriver();
             _searcher.ItemAddedEvent += Searcher_ItemAddedEvent;
             _searcher.SearchCompleteEvent += Searcher_SearchCompleteEvent;

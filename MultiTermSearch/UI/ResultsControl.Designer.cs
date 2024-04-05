@@ -33,11 +33,11 @@
             columnHeader1 = new ColumnHeader();
             columnHeader5 = new ColumnHeader();
             columnHeader2 = new ColumnHeader();
+            columnHeader6 = new ColumnHeader();
             columnHeader3 = new ColumnHeader();
             columnHeader4 = new ColumnHeader();
             panel1 = new Panel();
             rtDetails = new RichTextBox();
-            columnHeader6 = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -94,6 +94,11 @@
             columnHeader2.Text = "Matching Terms";
             columnHeader2.Width = 150;
             // 
+            // columnHeader6
+            // 
+            columnHeader6.Text = "Matching Lines";
+            columnHeader6.Width = 125;
+            // 
             // columnHeader3
             // 
             columnHeader3.Text = "Matches";
@@ -126,11 +131,6 @@
             rtDetails.TabIndex = 0;
             rtDetails.Text = "";
             // 
-            // columnHeader6
-            // 
-            columnHeader6.Text = "Matching Lines";
-            columnHeader6.Width = 125;
-            // 
             // ResultsControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -138,6 +138,7 @@
             Controls.Add(splitContainer1);
             Name = "ResultsControl";
             Size = new Size(1063, 733);
+            SizeChanged += ResultsControl_SizeChanged;
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();

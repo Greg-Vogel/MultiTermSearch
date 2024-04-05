@@ -60,7 +60,12 @@ public partial class ResultsControl : UserControl
         lvFiles.EndUpdate();
 
 
-        // Handle resizing of the columns 
+        // resize the columns to better fit the results we have so far
+        AdjustFileResultColumnWidths();
+    }
+
+    private void AdjustFileResultColumnWidths()
+    {
         lvFiles.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         int currentColWidth = 0;
         for (int i = 0; i < lvFiles.Columns.Count - 1; i++)
@@ -89,7 +94,7 @@ public partial class ResultsControl : UserControl
         rtDetails.Clear();
 
         // lookup what item we are displaying details for by its unique filePath
-        var fileResults = _results.FirstOrDefault(r=> r.FilePath == filePath);
+        var fileResults = _results.FirstOrDefault(r => r.FilePath == filePath);
         if (fileResults is null)
             return;
 
@@ -102,12 +107,12 @@ public partial class ResultsControl : UserControl
         int lineStartIndex = 0;
         string lineHeader = string.Empty;
         string lineToAdd = string.Empty;
-        foreach (var line in fileResults.LineResults )
+        foreach (var line in fileResults.LineResults)
         {
             lineHeader = string.Format("{0}: ", line.LineNumber.ToString().PadLeft(maxLineNumLength, ' '));
             lineStartIndex += lineHeader.Length;
 
-            lineToAdd = string.Format("{0}{1}{2}", lineHeader, line.Line, Environment.NewLine );
+            lineToAdd = string.Format("{0}{1}{2}", lineHeader, line.Line, Environment.NewLine);
 
             rtDetails.AppendText(lineToAdd);
 
@@ -123,5 +128,11 @@ public partial class ResultsControl : UserControl
         }
         rtDetails.ResumeLayout();
         rtDetails.PerformLayout();
+    }
+
+    private void ResultsControl_SizeChanged(object sender, EventArgs e)
+    {
+        // make sure the results expand and contract along with the window
+        AdjustFileResultColumnWidths();
     }
 }

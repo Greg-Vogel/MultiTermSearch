@@ -175,7 +175,7 @@ internal class SearchDriver
         if (!inputs.Options_ExcludeLargeDirectories)
             return false;
 
-        if (filePath.Contains(@"\.git\") || filePath.Contains(@"\node-modules\"))
+        if (filePath.Contains(@"\.git\") || filePath.Contains(@"\node_modules\"))
             return true;
 
         return false;

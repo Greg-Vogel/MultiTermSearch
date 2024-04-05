@@ -34,6 +34,7 @@
             chkFilterFileContains = new CheckBox();
             chkFilterLineContains = new CheckBox();
             grpOptions = new GroupBox();
+            chkExcludeLargeDir = new CheckBox();
             chkIgnoreCase = new CheckBox();
             chkWholeWord = new CheckBox();
             label1 = new Label();
@@ -53,7 +54,6 @@
             descPath = new Label();
             resultsControl1 = new ResultsControl();
             statusStrip1 = new StatusStrip();
-            chkExcludeLargeDir = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)scMain).BeginInit();
             scMain.Panel1.SuspendLayout();
             scMain.Panel2.SuspendLayout();
@@ -151,6 +151,17 @@
             grpOptions.TabStop = false;
             grpOptions.Text = "Search Options";
             // 
+            // chkExcludeLargeDir
+            // 
+            chkExcludeLargeDir.AutoSize = true;
+            chkExcludeLargeDir.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            chkExcludeLargeDir.Location = new Point(18, 72);
+            chkExcludeLargeDir.Name = "chkExcludeLargeDir";
+            chkExcludeLargeDir.Size = new Size(195, 19);
+            chkExcludeLargeDir.TabIndex = 2;
+            chkExcludeLargeDir.Text = "Exclude Dir: .git | node-modules";
+            chkExcludeLargeDir.UseVisualStyleBackColor = true;
+            // 
             // chkIgnoreCase
             // 
             chkIgnoreCase.AutoSize = true;
@@ -175,7 +186,6 @@
             // 
             // label1
             // 
-            label1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label1.Location = new Point(10, 616);
@@ -187,7 +197,7 @@
             // 
             // panel3
             // 
-            panel3.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panel3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel3.BackColor = Color.Black;
             panel3.Controls.Add(rtFileTypes);
             panel3.Location = new Point(10, 636);
@@ -366,17 +376,6 @@
             statusStrip1.Size = new Size(1106, 22);
             statusStrip1.TabIndex = 0;
             statusStrip1.Text = "statusStrip1";
-            // 
-            // chkExcludeLargeDir
-            // 
-            chkExcludeLargeDir.AutoSize = true;
-            chkExcludeLargeDir.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            chkExcludeLargeDir.Location = new Point(18, 72);
-            chkExcludeLargeDir.Name = "chkExcludeLargeDir";
-            chkExcludeLargeDir.Size = new Size(195, 19);
-            chkExcludeLargeDir.TabIndex = 2;
-            chkExcludeLargeDir.Text = "Exclude Dir: .git | node-modules";
-            chkExcludeLargeDir.UseVisualStyleBackColor = true;
             // 
             // MTS
             // 
