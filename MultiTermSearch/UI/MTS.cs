@@ -82,7 +82,7 @@ public partial class MTS : Form
         }
     }
 
-    private async void btnSearch_Click(object sender, EventArgs e)
+    private void btnSearch_Click(object sender, EventArgs e)
     {
         btnSearch.Enabled = false;
         if (_searcher != null && _searcher.SearchInProgress)

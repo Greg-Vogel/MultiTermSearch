@@ -51,7 +51,7 @@ internal class SearchDriver
                     , "*.*" // dont filter out here... we will use our own logic to determine if names/paths match
                     , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 , new ParallelOptions() { MaxDegreeOfParallelism = inputs.SearcherThreadCount } // limit the number of async threads we have searching files at a time
-                , async (filePath, loopState) =>
+                , (filePath, loopState) =>
                 {
                     // Make sure the user has not cancelled the search
                     if (_searchWorker.CancellationPending)

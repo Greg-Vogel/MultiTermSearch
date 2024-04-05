@@ -413,7 +413,6 @@
         private RichTextBox rtFileTypes;
         private ResultsControl resultsControl1;
         private GroupBox grpOptions;
-        private CheckBox chkFileContainsAll;
         private CheckBox chkIgnoreCase;
         private CheckBox chkWholeWord;
         private GroupBox grpFilterPatterns;
