@@ -11,8 +11,6 @@ internal class SearchDriver
     private CancellationTokenSource _cancelToken = new();
     internal bool SearchInProgress { get { return _searchWorker is null ? false : _searchWorker.IsBusy; } }
 
-    internal List<FileResult> Results { get; private set; } = new List<FileResult>();
-
 
     internal event EventHandler<ItemAddedEventArgs>? ItemAddedEvent;
     internal event EventHandler<EventArgs>? SearchCompleteEvent;
@@ -27,7 +25,7 @@ internal class SearchDriver
         _searchWorker.WorkerReportsProgress = true;
         _searchWorker.WorkerSupportsCancellation = true;
         _searchWorker.DoWork += _searchWorker_DoWork;
-        _searchWorker.ProgressChanged += _searchWorker_ProgressChanged;
+        _searchWorker.ProgressChanged += _searchWorker_ReportFileFound;
         _searchWorker.RunWorkerCompleted += _searchWorker_RunWorkerCompleted;
     }
 
@@ -49,18 +47,18 @@ internal class SearchDriver
 
         try
         {
-            var result = Parallel.ForEach(
-                Directory.EnumerateFiles(inputs.Path
+            var filesToScan = Directory.EnumerateFiles(inputs.Path
                     , "*.*" // dont filter out here... we will use our own logic to determine if names/paths match
-                    , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+                    , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+
+            var result = Parallel.ForEach(filesToScan
                 , new ParallelOptions() { MaxDegreeOfParallelism = inputs.SearcherThreadCount, CancellationToken = _cancelToken.Token } // limit the number of async threads we have searching files at a time
-                , (filePath, loopState) =>
+                , (filePath) =>
                 {
                     var task = Task.Run(async () =>
                     {
                         // Scan the current file for matches
                         return await ScanObjectForMatch(filePath, inputs, compiledRegex);
-
                     });
 
                     Task.WaitAll(task);
@@ -68,7 +66,6 @@ internal class SearchDriver
                     // post results
                     if (task.Result != null)
                     {
-                        Results.Add(task.Result);
                         _searchWorker.ReportProgress(0, task.Result);
                     }
                 });
@@ -79,7 +76,7 @@ internal class SearchDriver
         }
         finally { _cancelToken.Dispose(); }
     }
-    private void _searchWorker_ProgressChanged(object? sender, ProgressChangedEventArgs e)
+    private void _searchWorker_ReportFileFound(object? sender, ProgressChangedEventArgs e)
     {
         if (e.UserState is null) 
             return;
@@ -98,9 +95,6 @@ internal class SearchDriver
     /// <returns></returns>
     internal void StartSearchAsync(SearchInputs inputs)
     {
-        // if they called search twice on this same Driver, make sure we clear out the previous results
-        Results.Clear();
-
         // Prep the searchWorker if needed
         InitializeSearchWorker();
 

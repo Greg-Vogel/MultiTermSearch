@@ -2,7 +2,6 @@ using MultiTermSearch.Logic;
 using MultiTermSearch.Models;
 using MultiTermSearch.Events;
 using MultiTermSearch.Properties;
-using System.ComponentModel;
 
 namespace MultiTermSearch;
 
@@ -119,7 +118,9 @@ public partial class MTS : Form
             _searcher.ItemAddedEvent += Searcher_ItemAddedEvent;
             _searcher.SearchCompleteEvent += Searcher_SearchCompleteEvent;
         }
+        maxId = 0;
         _searcher.StartSearchAsync(inputs);
+        resultsControl1.BeginResultUpdates();
 
         // Now that the search is actually running
         //   switch the 'search' button into a 'cancel' one
@@ -127,13 +128,16 @@ public partial class MTS : Form
         btnSearch.Enabled = true;
     }
 
-
+    private int maxId = 0;
     private void Searcher_ItemAddedEvent(object? sender, ItemAddedEventArgs e)
     {
+        maxId += 1;
         resultsControl1.AddResult(e.Item);
+
     }
     private void Searcher_SearchCompleteEvent(object? sender, EventArgs e)
     {
+        resultsControl1.EndResultUpdates();
         btnSearch.Text = "Search";
         btnSearch.Enabled = true;
     }

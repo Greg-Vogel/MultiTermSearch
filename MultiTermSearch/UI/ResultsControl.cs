@@ -7,6 +7,9 @@ public partial class ResultsControl : UserControl
 {
     private List<FileResult> _results = new List<FileResult>();
     private Color _highlightColor = Color.Khaki;
+    private int _lastResultCount = 0;
+    private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
+    private System.Timers.Timer _updateTimer;
 
     ToolStripButton cmsButtonCopySelectedFileName = null!;
     ToolStripButton cmsButtonCopySelectedFilePath = null!;
@@ -29,9 +32,12 @@ public partial class ResultsControl : UserControl
         InitializeComponent();
 
         lvFiles.FullRowSelect = true;
+        _updateTimer = new System.Timers.Timer(_millisecondRefreshFrequency) { AutoReset = true };
+        _updateTimer.Elapsed += UpdateTimer_ElapsedEvent;
 
         SetupContextMenuStrip();
     }
+
 
     public void SetupContextMenuStrip()
     {
@@ -47,6 +53,28 @@ public partial class ResultsControl : UserControl
         cmsButtonCopyAllFilePaths.Click += CmsButtonCopyAllFilePaths_Click;
     }
 
+    public void BeginResultUpdates()
+    {
+        _updateTimer.Start();
+    }
+    public void EndResultUpdates()
+    {
+        _updateTimer.Stop();
+
+        // perform one last update to the UI to make sure all results are drawn
+        UpdateFileList();
+    }
+    private void UpdateTimer_ElapsedEvent(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        // if no items were found during this time... skip updating
+        if (_lastResultCount == _results.Count)
+            return;
+
+        // We have something new to draw...
+        //   Trigger the redraw back on the UI thread, not this timer thread
+        lvFiles.Invoke(UpdateFileList);
+    }
+
 
     public void ClearResults()
     {
@@ -54,21 +82,28 @@ public partial class ResultsControl : UserControl
         lvFiles.Items.Clear();
         rtDetails.Clear();
         lvFiles.ContextMenuStrip = null;
+        _lastResultCount = 0;
     }
 
     public void AddResult(FileResult result)
+    {
+        // always store the result sent to us
+        _results.Add(result);
+    }
+
+    private void UpdateFileList()
     {
         // dont let the user click anything while we are in the middle of redrawing its parent
         cmsFiles.Hide();
         cmsFiles.Enabled = false;
 
-        // get the index we need to insert this new record at based on file path
-        _results.Add(result);
+        // order the results sort of based on the file system... helps keep results more coherent for now
         _results = _results.OrderBy(r => r.FilePath).ToList();
 
 
         // Rebuild the file result list from scratch
         //   dont draw it while we add items to reduce flashing and more quickly finish this piece
+        this.SuspendLayout();
         lvFiles.BeginUpdate();
         lvFiles.Items.Clear();
         int fileCount = 1;
@@ -86,6 +121,7 @@ public partial class ResultsControl : UserControl
             fileCount++;
         }
         lvFiles.EndUpdate();
+        this.ResumeLayout();
 
 
         // resize the columns to better fit the results we have so far
@@ -94,6 +130,9 @@ public partial class ResultsControl : UserControl
         // turn the context menu strip back on now that we are done updating its parent
         cmsFiles.Enabled = true;
         lvFiles.ContextMenuStrip = cmsFiles;
+
+        // let our UI refresh checks know what we drew this time
+        _lastResultCount = _results.Count;
     }
 
     private void AdjustFileResultColumnWidths()
