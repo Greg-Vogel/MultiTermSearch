@@ -132,8 +132,9 @@ public partial class ResultsControl : UserControl
 
             fileCount++;
         }
-        lvFiles.EndUpdate();
-        this.ResumeLayout();
+
+        // resize the columns to better fit the results we have so far
+        AdjustFileResultColumnWidths();
 
         // If the user was previously viewing a file, reselect it now that we might have changed its location and re-enable the index change event
         if (selectedIndex >= 0)
@@ -145,8 +146,9 @@ public partial class ResultsControl : UserControl
         lvFiles.SelectedIndexChanged += lvFiles_SelectedIndexChanged;
 
 
-        // resize the columns to better fit the results we have so far
-        AdjustFileResultColumnWidths();
+        // start drawing the UI again
+        lvFiles.EndUpdate();
+        this.ResumeLayout();
 
         // turn the context menu strip back on now that we are done updating its parent
         cmsFiles.Enabled = true;
