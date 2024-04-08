@@ -36,6 +36,9 @@ public partial class ResultsControl : UserControl
 
         lvFiles.FullRowSelect = true;
         lvFiles.Columns[(int)ColIndexes.FullFilePath].Width = 0;
+        lvFiles.GetType()?
+            .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
+            .SetValue(lvFiles, true, null);
         _updateTimer = new System.Timers.Timer(_millisecondRefreshFrequency) { AutoReset = true };
         _updateTimer.Elapsed += UpdateTimer_ElapsedEvent;
 
@@ -147,8 +150,8 @@ public partial class ResultsControl : UserControl
 
 
         // start drawing the UI again
-        lvFiles.EndUpdate();
         this.ResumeLayout();
+        lvFiles.EndUpdate();
 
         // turn the context menu strip back on now that we are done updating its parent
         cmsFiles.Enabled = true;
