@@ -21,6 +21,7 @@ internal class MtsSettings
         IncludeSubDir = inputs.IncludeSubDir;
         Options_IgnoreCase = inputs.Options_IgnoreCase;
         Options_MatchWholeWord = inputs.Options_MatchWholeWord;
+        Options_ExcludeLargeDirectories = inputs.Options_ExcludeLargeDirectories;
         Filters_FileContainsAll = inputs.Filters_FileContainsAll;
         Filters_LineContainsAll = inputs.Filters_LineContainsAll;
         Target = inputs.Target;

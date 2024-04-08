@@ -37,6 +37,7 @@
             columnHeader6 = new ColumnHeader();
             columnHeader3 = new ColumnHeader();
             columnHeader4 = new ColumnHeader();
+            columnHeader7 = new ColumnHeader();
             cmsFiles = new ContextMenuStrip(components);
             panel1 = new Panel();
             rtDetails = new RichTextBox();
@@ -68,7 +69,7 @@
             // lvFiles
             // 
             lvFiles.BorderStyle = BorderStyle.FixedSingle;
-            lvFiles.Columns.AddRange(new ColumnHeader[] { columnHeader1, columnHeader5, columnHeader2, columnHeader6, columnHeader3, columnHeader4 });
+            lvFiles.Columns.AddRange(new ColumnHeader[] { columnHeader1, columnHeader5, columnHeader2, columnHeader6, columnHeader3, columnHeader4, columnHeader7 });
             lvFiles.ContextMenuStrip = cmsFiles;
             lvFiles.Dock = DockStyle.Fill;
             lvFiles.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -109,15 +110,19 @@
             // 
             // columnHeader4
             // 
-            columnHeader4.Text = "Full Path";
+            columnHeader4.Text = "File Path";
             columnHeader4.Width = 200;
+            // 
+            // columnHeader7
+            // 
+            columnHeader7.Text = "Full Path";
             // 
             // cmsFiles
             // 
             cmsFiles.LayoutStyle = ToolStripLayoutStyle.VerticalStackWithOverflow;
             cmsFiles.Name = "contextMenuStrip1";
             cmsFiles.ShowImageMargin = false;
-            cmsFiles.Size = new Size(156, 26);
+            cmsFiles.Size = new Size(36, 4);
             cmsFiles.Opening += cmsFiles_Opening;
             // 
             // panel1
@@ -171,5 +176,6 @@
         private ColumnHeader columnHeader5;
         private ColumnHeader columnHeader6;
         private ContextMenuStrip cmsFiles;
+        private ColumnHeader columnHeader7;
     }
 }

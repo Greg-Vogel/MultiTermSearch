@@ -6,10 +6,12 @@ namespace MultiTermSearch;
 public partial class ResultsControl : UserControl
 {
     private List<FileResult> _results = new List<FileResult>();
+    private string _rootDir = string.Empty;
     private Color _highlightColor = Color.Khaki;
     private int _lastResultCount = 0;
     private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
     private System.Timers.Timer _updateTimer;
+    private string _selectedFilePath = string.Empty;
 
     ToolStripButton cmsButtonCopySelectedFileName = null!;
     ToolStripButton cmsButtonCopySelectedFilePath = null!;
@@ -24,7 +26,8 @@ public partial class ResultsControl : UserControl
         MatchingTerms = 2,
         MatchingLines = 3,
         MatchCount = 4,
-        FilePath = 5,
+        ShortFilePath = 5,
+        FullFilePath = 6,
     }
 
     public ResultsControl()
@@ -32,6 +35,7 @@ public partial class ResultsControl : UserControl
         InitializeComponent();
 
         lvFiles.FullRowSelect = true;
+        lvFiles.Columns[(int)ColIndexes.FullFilePath].Width = 0;
         _updateTimer = new System.Timers.Timer(_millisecondRefreshFrequency) { AutoReset = true };
         _updateTimer.Elapsed += UpdateTimer_ElapsedEvent;
 
@@ -53,8 +57,9 @@ public partial class ResultsControl : UserControl
         cmsButtonCopyAllFilePaths.Click += CmsButtonCopyAllFilePaths_Click;
     }
 
-    public void BeginResultUpdates()
+    public void BeginResultUpdates(string rootSearchDir)
     {
+        _rootDir = rootSearchDir.EndsWith("\\") ? rootSearchDir : rootSearchDir + "\\";
         _updateTimer.Start();
     }
     public void EndResultUpdates()
@@ -98,11 +103,17 @@ public partial class ResultsControl : UserControl
         cmsFiles.Enabled = false;
 
         // order the results sort of based on the file system... helps keep results more coherent for now
+        //   also save off the new index of the record that is currently selected
         _results = _results.OrderBy(r => r.FilePath).ToList();
+        int selectedIndex = -1;
+        if (!string.IsNullOrWhiteSpace(_selectedFilePath))
+            selectedIndex = _results.FindIndex(r => r.FilePath == _selectedFilePath);
 
 
         // Rebuild the file result list from scratch
         //   dont draw it while we add items to reduce flashing and more quickly finish this piece
+        //   also disable the index changed event so if the user is viewing a files details, we dont make them loose their place
+        lvFiles.SelectedIndexChanged -= lvFiles_SelectedIndexChanged;
         this.SuspendLayout();
         lvFiles.BeginUpdate();
         lvFiles.Items.Clear();
@@ -114,6 +125,7 @@ public partial class ResultsControl : UserControl
             , string.Join(",", res.FoundTerms).Trim(',')
             , res.LineResults.Count.ToString()
             , res.MatchCount.ToString()
+            , res.FilePath.Replace(_rootDir, "...\\")
             , res.FilePath };
 
             lvFiles.Items.Add(new ListViewItem(rowValues));
@@ -122,6 +134,15 @@ public partial class ResultsControl : UserControl
         }
         lvFiles.EndUpdate();
         this.ResumeLayout();
+
+        // If the user was previously viewing a file, reselect it now that we might have changed its location and re-enable the index change event
+        if (selectedIndex >= 0)
+        {
+            lvFiles.Items[selectedIndex].Focused = true;
+            lvFiles.Items[selectedIndex].Selected = true;
+            lvFiles.Items[selectedIndex].EnsureVisible();
+        }
+        lvFiles.SelectedIndexChanged += lvFiles_SelectedIndexChanged;
 
 
         // resize the columns to better fit the results we have so far
@@ -137,13 +158,24 @@ public partial class ResultsControl : UserControl
 
     private void AdjustFileResultColumnWidths()
     {
+        // resize all of the columns to fit their content... we dont want to cut any words short and force the user to manually expand a column
         lvFiles.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+
+        // hide any hidden columns
+        lvFiles.Columns[(int)ColIndexes.FullFilePath].Width = 0;
+
+
+        // Figure out if the column widths sumb up shorter than the whole lvFiles control itself
+        //   If they do... expand the file path column to fill the space
+        //   If they overflow past the width, just leave them alone
         int currentColWidth = 0;
         for (int i = 0; i < lvFiles.Columns.Count - 1; i++)
         {
             currentColWidth += lvFiles.Columns[i].Width;
         }
-        lvFiles.Columns[(int)ColIndexes.FilePath].Width = Math.Max(100, lvFiles.Width - currentColWidth - 4); // make the last column take up the rest of the space or at minimum 100px
+        int borderBuffer = 4;
+        if (lvFiles.Width > currentColWidth + borderBuffer)
+            lvFiles.Columns[(int)ColIndexes.ShortFilePath].Width += (lvFiles.Width - currentColWidth - borderBuffer);
     }
 
     private void DisplayDetails(string filePath)
@@ -188,15 +220,16 @@ public partial class ResultsControl : UserControl
     }
 
 
-    private void lvFiles_SelectedIndexChanged(object sender, EventArgs e)
+    private void lvFiles_SelectedIndexChanged(object? sender, EventArgs e)
     {
         if (lvFiles.SelectedIndices.Count == 0)
             return;
 
         // we should have a single record if we are here
         var item = lvFiles.SelectedItems[0];
-        var filePath = item.SubItems[(int)ColIndexes.FilePath].Text;
-        DisplayDetails(filePath);
+        _selectedFilePath = item.SubItems[(int)ColIndexes.FullFilePath].Text;
+
+        DisplayDetails(_selectedFilePath);
     }
 
 
@@ -218,14 +251,14 @@ public partial class ResultsControl : UserControl
 
     private void CmsButtonCopySelectedFileName_Click(object? sender, EventArgs e)
     {
-        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FilePath].Text;
+        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
         var selectedFile = _results.FirstOrDefault(r => r.FilePath == selectedFilePath);
         if (selectedFile != null)
             Clipboard.SetText(selectedFile.FileName);
     }
     private void CmsButtonCopySelectedFilePath_Click(object? sender, EventArgs e)
     {
-        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FilePath].Text;
+        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
         var selectedFile = _results.FirstOrDefault(r => r.FilePath == selectedFilePath);
         if (selectedFile != null)
             Clipboard.SetText(selectedFile.FilePath);

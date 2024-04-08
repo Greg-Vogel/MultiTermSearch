@@ -50,6 +50,7 @@ public partial class MTS : Form
         chkIncludeSubDir.Checked = _settings.IncludeSubDir;
         chkWholeWord.Checked = _settings.Options_MatchWholeWord;
         chkIgnoreCase.Checked = _settings.Options_IgnoreCase;
+        chkExcludeLargeDir.Checked = _settings.Options_ExcludeLargeDirectories;
         chkFilterLineContains.Checked = _settings.Filters_LineContainsAll;
         chkFilterFileContains.Checked = _settings.Filters_FileContainsAll;
         rtFileTypes.Lines = _settings.IncludeTypes;
@@ -120,7 +121,7 @@ public partial class MTS : Form
         }
         maxId = 0;
         _searcher.StartSearchAsync(inputs);
-        resultsControl1.BeginResultUpdates();
+        resultsControl1.BeginResultUpdates(inputs.Path);
 
         // Now that the search is actually running
         //   switch the 'search' button into a 'cancel' one
