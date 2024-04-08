@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             splitContainer1 = new SplitContainer();
             lvFiles = new ListView();
             columnHeader1 = new ColumnHeader();
@@ -36,6 +37,7 @@
             columnHeader6 = new ColumnHeader();
             columnHeader3 = new ColumnHeader();
             columnHeader4 = new ColumnHeader();
+            cmsFiles = new ContextMenuStrip(components);
             panel1 = new Panel();
             rtDetails = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -67,6 +69,7 @@
             // 
             lvFiles.BorderStyle = BorderStyle.FixedSingle;
             lvFiles.Columns.AddRange(new ColumnHeader[] { columnHeader1, columnHeader5, columnHeader2, columnHeader6, columnHeader3, columnHeader4 });
+            lvFiles.ContextMenuStrip = cmsFiles;
             lvFiles.Dock = DockStyle.Fill;
             lvFiles.Font = new Font("Courier New", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
             lvFiles.FullRowSelect = true;
@@ -108,6 +111,14 @@
             // 
             columnHeader4.Text = "Full Path";
             columnHeader4.Width = 200;
+            // 
+            // cmsFiles
+            // 
+            cmsFiles.LayoutStyle = ToolStripLayoutStyle.VerticalStackWithOverflow;
+            cmsFiles.Name = "contextMenuStrip1";
+            cmsFiles.ShowImageMargin = false;
+            cmsFiles.Size = new Size(156, 26);
+            cmsFiles.Opening += cmsFiles_Opening;
             // 
             // panel1
             // 
@@ -159,5 +170,6 @@
         private ColumnHeader columnHeader4;
         private ColumnHeader columnHeader5;
         private ColumnHeader columnHeader6;
+        private ContextMenuStrip cmsFiles;
     }
 }
