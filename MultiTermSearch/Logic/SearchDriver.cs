@@ -14,6 +14,7 @@ internal class SearchDriver
 
     internal event EventHandler<ItemAddedEventArgs>? ItemAddedEvent;
     internal event EventHandler<EventArgs>? SearchCompleteEvent;
+    internal event EventHandler<FileListIdentifiedEventArgs>? FileListIdentifiedEvent;
 
 
     private void InitializeSearchWorker()
@@ -49,7 +50,9 @@ internal class SearchDriver
         {
             var filesToScan = Directory.EnumerateFiles(inputs.Path
                     , "*.*" // dont filter out here... we will use our own logic to determine if names/paths match
-                    , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                    , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).ToArray();
+
+            _searchWorker.ReportProgress(0, filesToScan.Length);
 
             var result = Parallel.ForEach(filesToScan
                 , new ParallelOptions() { MaxDegreeOfParallelism = inputs.SearcherThreadCount, CancellationToken = _cancelToken.Token } // limit the number of async threads we have searching files at a time
@@ -64,10 +67,7 @@ internal class SearchDriver
                     Task.WaitAll(task);
 
                     // post results
-                    if (task.Result != null)
-                    {
-                        _searchWorker.ReportProgress(0, task.Result);
-                    }
+                    _searchWorker.ReportProgress(1, task.Result);
                 });
         }
         catch (OperationCanceledException)
@@ -78,9 +78,15 @@ internal class SearchDriver
     }
     private void _searchWorker_ReportFileFound(object? sender, ProgressChangedEventArgs e)
     {
-        if (e.UserState is null) 
-            return;
-        ItemAddedEvent?.Invoke(this, new ItemAddedEventArgs((FileResult)e.UserState));
+        if (e.ProgressPercentage == 0)
+        {
+            FileListIdentifiedEvent?.Invoke(this, new FileListIdentifiedEventArgs((int)e.UserState));
+        }
+        else
+        {
+            ItemAddedEvent?.Invoke(this, new ItemAddedEventArgs((FileResult)e.UserState));
+        }
+
     }
     private void _searchWorker_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
     {

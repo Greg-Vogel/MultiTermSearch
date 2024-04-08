@@ -7,8 +7,11 @@ namespace MultiTermSearch;
 
 public partial class MTS : Form
 {
-    MtsSettings _settings = null!;
-    SearchDriver _searcher = null!;
+    private MtsSettings _settings = null!;
+    private SearchDriver _searcher = null!;
+    private int _totalFiles = 0;
+    private int _filesMatching = 0;
+    private int _filesSearched = 0;
 
     public MTS()
     {
@@ -88,6 +91,7 @@ public partial class MTS : Form
         if (_searcher != null && _searcher.SearchInProgress)
         {
             _searcher.CancelSearchAsync();
+            UpdateStatusDisplay("Cancelled");
             return;
         }
 
@@ -116,12 +120,17 @@ public partial class MTS : Form
         if (_searcher is null)
         {
             _searcher = new SearchDriver();
-            _searcher.ItemAddedEvent += Searcher_ItemAddedEvent;
+            _searcher.FileListIdentifiedEvent += Searcher_FileListIdentifiedEvent;
+            _searcher.ItemAddedEvent += Searcher_ProgressEvent;
             _searcher.SearchCompleteEvent += Searcher_SearchCompleteEvent;
         }
-        maxId = 0;
+        _totalFiles = 0;
+        _filesMatching = 0;
+        _filesSearched = 0;
         _searcher.StartSearchAsync(inputs);
         resultsControl1.BeginResultUpdates(inputs.Path);
+
+        // Update the status display for the users benefit
 
         // Now that the search is actually running
         //   switch the 'search' button into a 'cancel' one
@@ -129,18 +138,48 @@ public partial class MTS : Form
         btnSearch.Enabled = true;
     }
 
-    private int maxId = 0;
-    private void Searcher_ItemAddedEvent(object? sender, ItemAddedEventArgs e)
+    private void UpdateStatusDisplay(string? status)
     {
-        maxId += 1;
-        resultsControl1.AddResult(e.Item);
+        tsStatus.Value = Convert.ToInt32(Convert.ToDecimal(_filesSearched) / Convert.ToDecimal(_totalFiles) * 100);
+        tsMatches.Text = $"Files Matching: {_filesMatching}";
+        tsTotal.Text = $"Files Searched: {_filesSearched}";
 
+        if (status == null)
+            return;
+        if (tsStatusLabel.Text == "Cancelled" && status == "Finished")
+            return;
+
+        tsStatusLabel.Text = status;
+    }
+
+    private void Searcher_FileListIdentifiedEvent(object? sender, FileListIdentifiedEventArgs e)
+    {
+        _totalFiles = e.FileCount;
+        UpdateStatusDisplay(null);
+    }
+
+    private void Searcher_ProgressEvent(object? sender, ItemAddedEventArgs e)
+    {
+        // increment the total files searched
+        _filesSearched += 1;
+
+        // if we actually got a match, count it and add it to the display
+        if (e.Item is not null)
+        {
+            _filesMatching += 1;
+            resultsControl1.AddResult(e.Item);
+        }
+
+        UpdateStatusDisplay(null);
     }
     private void Searcher_SearchCompleteEvent(object? sender, EventArgs e)
     {
         resultsControl1.EndResultUpdates();
         btnSearch.Text = "Search";
         btnSearch.Enabled = true;
+
+        // Update some status text
+        UpdateStatusDisplay("Finished");
     }
 
     private SearchInputs GetInputs()
