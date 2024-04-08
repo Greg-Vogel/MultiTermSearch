@@ -8,6 +8,7 @@ namespace MultiTermSearch.Logic;
 internal class SearchDriver
 {
     private BackgroundWorker _searchWorker = null!;
+    private CancellationTokenSource _cancelToken = new();
     internal bool SearchInProgress { get { return _searchWorker is null ? false : _searchWorker.IsBusy; } }
 
     internal List<FileResult> Results { get; private set; } = new List<FileResult>();
@@ -44,19 +45,17 @@ internal class SearchDriver
         // Start a parallel ForEach up process multiple files at once
         //    It uses EnumerateFileSystemEntries because it enumerates them as it finds them instead of waiting to find the full list of files upfront
         List<Task> tasks = new List<Task>();
+        _cancelToken = new CancellationTokenSource();
+
         try
         {
             var result = Parallel.ForEach(
                 Directory.EnumerateFiles(inputs.Path
                     , "*.*" // dont filter out here... we will use our own logic to determine if names/paths match
                     , inputs.IncludeSubDir ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-                , new ParallelOptions() { MaxDegreeOfParallelism = inputs.SearcherThreadCount } // limit the number of async threads we have searching files at a time
+                , new ParallelOptions() { MaxDegreeOfParallelism = inputs.SearcherThreadCount, CancellationToken = _cancelToken.Token } // limit the number of async threads we have searching files at a time
                 , (filePath, loopState) =>
                 {
-                    // Make sure the user has not cancelled the search
-                    if (_searchWorker.CancellationPending)
-                        loopState.Stop();
-
                     var task = Task.Run(async () =>
                     {
                         // Scan the current file for matches
@@ -78,6 +77,7 @@ internal class SearchDriver
         {
             // do nothing with this... its user requested
         }
+        finally { _cancelToken.Dispose(); }
     }
     private void _searchWorker_ProgressChanged(object? sender, ProgressChangedEventArgs e)
     {
@@ -113,7 +113,7 @@ internal class SearchDriver
     /// </summary>
     internal void CancelSearchAsync()
     {
-        _searchWorker.CancelAsync();
+        _cancelToken.Cancel();
     }
 
 
