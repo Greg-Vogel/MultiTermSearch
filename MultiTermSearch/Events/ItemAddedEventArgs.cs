@@ -1,11 +1,11 @@
 ﻿namespace MultiTermSearch.Events;
-using MultiTermSearch.Models;
+using MultiTermSearch.Classes;
 
 internal class ItemAddedEventArgs : EventArgs
 {
-    public FileResult Item { get; }
+    public FileResult? Item { get; }
 
-    public ItemAddedEventArgs(FileResult item)
+    public ItemAddedEventArgs(FileResult? item)
     {
         Item = item;
     }

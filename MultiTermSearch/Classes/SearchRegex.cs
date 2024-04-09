@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace MultiTermSearch.Models;
+namespace MultiTermSearch.Classes;
 
 public class SearchRegex : Regex
 {

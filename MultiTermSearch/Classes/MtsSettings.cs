@@ -1,4 +1,4 @@
-﻿namespace MultiTermSearch.Models;
+﻿namespace MultiTermSearch.Classes;
 
 internal class MtsSettings
 {

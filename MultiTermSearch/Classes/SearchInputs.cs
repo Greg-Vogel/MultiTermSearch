@@ -1,6 +1,7 @@
-﻿namespace MultiTermSearch.Models;
+﻿
+namespace MultiTermSearch.Classes;
 
-internal class SearchInputs
+public class SearchInputs
 {
     public string Path { get; set; } = null!;
     public bool IncludeSubDir { get; set; }

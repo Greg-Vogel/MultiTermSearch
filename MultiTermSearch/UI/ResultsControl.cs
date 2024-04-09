@@ -1,4 +1,4 @@
-﻿using MultiTermSearch.Models;
+﻿using MultiTermSearch.Classes;
 using System.Data;
 
 namespace MultiTermSearch;

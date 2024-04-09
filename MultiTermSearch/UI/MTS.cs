@@ -1,5 +1,5 @@
 using MultiTermSearch.Logic;
-using MultiTermSearch.Models;
+using MultiTermSearch.Classes;
 using MultiTermSearch.Events;
 using MultiTermSearch.Properties;
 
@@ -12,6 +12,7 @@ public partial class MTS : Form
     private int _totalFiles = 0;
     private int _filesMatching = 0;
     private int _filesSearched = 0;
+    private byte _threads = 1;
 
     public MTS()
     {
@@ -85,13 +86,13 @@ public partial class MTS : Form
         }
     }
 
-    private void btnSearch_Click(object sender, EventArgs e)
+    private async void btnSearch_Click(object sender, EventArgs e)
     {
         btnSearch.Enabled = false;
         if (_searcher != null && _searcher.SearchInProgress)
         {
             _searcher.CancelSearchAsync();
-            UpdateStatusDisplay("Cancelled");
+            UpdateStatusDisplay("Cancelling...");
             return;
         }
 
@@ -121,7 +122,7 @@ public partial class MTS : Form
         {
             _searcher = new SearchDriver();
             _searcher.FileListIdentifiedEvent += Searcher_FileListIdentifiedEvent;
-            _searcher.ItemAddedEvent += Searcher_ProgressEvent;
+            _searcher.FileSearchedEvent += Searcher_FileSearchedEvent;
             _searcher.SearchCompleteEvent += Searcher_SearchCompleteEvent;
         }
         _totalFiles = 0;
@@ -131,6 +132,7 @@ public partial class MTS : Form
         resultsControl1.BeginResultUpdates(inputs.Path);
 
         // Update the status display for the users benefit
+        UpdateStatusDisplay("Searching...");
 
         // Now that the search is actually running
         //   switch the 'search' button into a 'cancel' one
@@ -140,14 +142,25 @@ public partial class MTS : Form
 
     private void UpdateStatusDisplay(string? status)
     {
-        tsStatus.Value = Convert.ToInt32(Convert.ToDecimal(_filesSearched) / Convert.ToDecimal(_totalFiles) * 100);
+        tsStatus.Value = _totalFiles == 0 ? 0 : Convert.ToInt32(Convert.ToDecimal(_filesSearched) / Convert.ToDecimal(_totalFiles) * 100);
         tsMatches.Text = $"Files Matching: {_filesMatching}";
-        tsTotal.Text = $"Files Searched: {_filesSearched}";
+        tsTotal.Text = $"Files Scanned: {_filesSearched}";
 
         if (status == null)
             return;
-        if (tsStatusLabel.Text == "Cancelled" && status == "Finished")
-            return;
+        if (status == "Finished")
+        {
+            tsStatus.Value = 0;
+            if (tsStatusLabel.Text == "Cancelling...")
+            {
+                tsStatusLabel.Text = "Cancelled";
+                return;
+            }
+            else if (tsStatusLabel.Text == "Cancelled")
+            {
+                return;
+            }
+        }
 
         tsStatusLabel.Text = status;
     }
@@ -158,7 +171,7 @@ public partial class MTS : Form
         UpdateStatusDisplay(null);
     }
 
-    private void Searcher_ProgressEvent(object? sender, ItemAddedEventArgs e)
+    private void Searcher_FileSearchedEvent(object? sender, ItemAddedEventArgs e)
     {
         // increment the total files searched
         _filesSearched += 1;
@@ -196,7 +209,7 @@ public partial class MTS : Form
             Filters_FileContainsAll = chkFilterFileContains.Checked,
             Target = GetInput_Target(),
             IncludeTypes = rtFileTypes.Lines,
-            SearcherThreadCount = 3
+            SearcherThreadCount = _threads,
         };
     }
 
