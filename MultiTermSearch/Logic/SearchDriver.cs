@@ -116,7 +116,7 @@ internal class SearchDriver
 
 
 
-    private async void SearchDriver_DoWork(object? sender, DoWorkEventArgs e)
+    private void SearchDriver_DoWork(object? sender, DoWorkEventArgs e)
     {
         if (e.Argument is not SearchInputs inputs)
             return;

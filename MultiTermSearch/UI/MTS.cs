@@ -12,7 +12,6 @@ public partial class MTS : Form
     private int _totalFiles = 0;
     private int _filesMatching = 0;
     private int _filesSearched = 0;
-    private byte _threads = 3;
 
     public MTS()
     {
