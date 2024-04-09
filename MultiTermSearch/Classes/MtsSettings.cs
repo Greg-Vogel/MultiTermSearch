@@ -15,6 +15,8 @@ internal class MtsSettings
     public string[] IncludeTypes { get; set; } = { ".txt" };
     public string[] SavedFileTypes { get; set; } = { ".txt", ".cs", ".vb", ".ts", ".js", ".yaml", ".html", ".cshtml", ".htmx", ".sln", ".csproj", ".vbproj", ".sql" };
 
+    public int MaxThreadCount { get; set; } = 1;
+
     public void MergeInputs(SearchInputs inputs)
     {
         Path = inputs.Path;
@@ -26,5 +28,6 @@ internal class MtsSettings
         Filters_LineContainsAll = inputs.Filters_LineContainsAll;
         Target = inputs.Target;
         IncludeTypes = inputs.IncludeTypes;
+        MaxThreadCount = inputs.SearcherThreadCount;
     }
 }

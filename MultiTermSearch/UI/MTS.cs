@@ -12,7 +12,7 @@ public partial class MTS : Form
     private int _totalFiles = 0;
     private int _filesMatching = 0;
     private int _filesSearched = 0;
-    private byte _threads = 1;
+    private byte _threads = 3;
 
     public MTS()
     {
@@ -70,6 +70,7 @@ public partial class MTS : Form
                 radTargetBoth.Checked = true;
                 break;
         }
+        cbThreads.SelectedItem = _settings.MaxThreadCount.ToString();
         this.ActiveControl = rtSearchTerms;
     }
 
@@ -86,7 +87,7 @@ public partial class MTS : Form
         }
     }
 
-    private async void btnSearch_Click(object sender, EventArgs e)
+    private void btnSearch_Click(object sender, EventArgs e)
     {
         btnSearch.Enabled = false;
         if (_searcher != null && _searcher.SearchInProgress)
@@ -153,16 +154,20 @@ public partial class MTS : Form
             tsStatus.Value = 0;
             if (tsStatusLabel.Text == "Cancelling...")
             {
-                tsStatusLabel.Text = "Cancelled";
+                tsStatusLabel.Text = $"Cancelled after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
                 return;
             }
             else if (tsStatusLabel.Text == "Cancelled")
             {
                 return;
             }
+            tsStatusLabel.Text = $"Finished after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
+        }
+        else
+        {
+            tsStatusLabel.Text = status;
         }
 
-        tsStatusLabel.Text = status;
     }
 
     private void Searcher_FileListIdentifiedEvent(object? sender, FileListIdentifiedEventArgs e)
@@ -209,7 +214,7 @@ public partial class MTS : Form
             Filters_FileContainsAll = chkFilterFileContains.Checked,
             Target = GetInput_Target(),
             IncludeTypes = rtFileTypes.Lines,
-            SearcherThreadCount = _threads,
+            SearcherThreadCount = Convert.ToByte(cbThreads.SelectedItem),
         };
     }
 

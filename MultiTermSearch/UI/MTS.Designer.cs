@@ -30,6 +30,8 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MTS));
             scMain = new SplitContainer();
+            cbThreads = new ComboBox();
+            label2 = new Label();
             grpFilterPatterns = new GroupBox();
             chkFilterFileContains = new CheckBox();
             chkFilterLineContains = new CheckBox();
@@ -80,6 +82,8 @@
             // 
             // scMain.Panel1
             // 
+            scMain.Panel1.Controls.Add(cbThreads);
+            scMain.Panel1.Controls.Add(label2);
             scMain.Panel1.Controls.Add(grpFilterPatterns);
             scMain.Panel1.Controls.Add(grpOptions);
             scMain.Panel1.Controls.Add(label1);
@@ -104,6 +108,28 @@
             scMain.SplitterDistance = 295;
             scMain.TabIndex = 0;
             scMain.TabStop = false;
+            // 
+            // cbThreads
+            // 
+            cbThreads.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            cbThreads.FormattingEnabled = true;
+            cbThreads.Items.AddRange(new object[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" });
+            cbThreads.Location = new Point(100, 879);
+            cbThreads.Name = "cbThreads";
+            cbThreads.Size = new Size(71, 23);
+            cbThreads.TabIndex = 52;
+            // 
+            // label2
+            // 
+            label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label2.Location = new Point(10, 882);
+            label2.Margin = new Padding(5, 20, 5, 0);
+            label2.Name = "label2";
+            label2.Size = new Size(82, 15);
+            label2.TabIndex = 51;
+            label2.Text = "Thread Count:";
             // 
             // grpFilterPatterns
             // 
@@ -211,7 +237,7 @@
             panel3.Margin = new Padding(5, 5, 3, 0);
             panel3.Name = "panel3";
             panel3.Padding = new Padding(1);
-            panel3.Size = new Size(281, 253);
+            panel3.Size = new Size(281, 234);
             panel3.TabIndex = 50;
             // 
             // rtFileTypes
@@ -222,7 +248,7 @@
             rtFileTypes.Location = new Point(1, 1);
             rtFileTypes.Margin = new Padding(1);
             rtFileTypes.Name = "rtFileTypes";
-            rtFileTypes.Size = new Size(279, 251);
+            rtFileTypes.Size = new Size(279, 232);
             rtFileTypes.TabIndex = 50;
             rtFileTypes.Text = ".*";
             // 
@@ -402,7 +428,7 @@
             // tsSpacer
             // 
             tsSpacer.Name = "tsSpacer";
-            tsSpacer.Size = new Size(637, 17);
+            tsSpacer.Size = new Size(668, 17);
             tsSpacer.Spring = true;
             // 
             // tsMatches
@@ -485,5 +511,7 @@
         private ToolStripStatusLabel toolStripStatusLabel3;
         private ToolStripStatusLabel tsTotal;
         private ToolStripStatusLabel tsStatusLabel;
+        private ComboBox cbThreads;
+        private Label label2;
     }
 }
