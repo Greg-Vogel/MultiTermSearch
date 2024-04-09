@@ -1,5 +1,5 @@
-﻿using MultiTermSearch.Classes;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using MultiTermSearch.Classes;
 
 namespace MultiTermSearch.Helpers;
 

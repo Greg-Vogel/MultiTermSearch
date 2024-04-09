@@ -1,14 +1,9 @@
 ﻿using MultiTermSearch.Classes;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MultiTermSearch.Helpers;
 
-internal class FileQueueHelper
+internal static class FileQueueHelper
 {
     internal static ConcurrentQueue<string> FileQueue { get; set; } = new ConcurrentQueue<string>();
 

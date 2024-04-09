@@ -1,5 +1,6 @@
-﻿namespace MultiTermSearch.Events;
-using MultiTermSearch.Classes;
+﻿using MultiTermSearch.Classes;
+
+namespace MultiTermSearch.Events;
 
 internal class ItemAddedEventArgs : EventArgs
 {

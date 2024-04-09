@@ -121,7 +121,7 @@
             // 
             // label2
             // 
-            label2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            label2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.Location = new Point(10, 882);
@@ -428,7 +428,7 @@
             // tsSpacer
             // 
             tsSpacer.Name = "tsSpacer";
-            tsSpacer.Size = new Size(668, 17);
+            tsSpacer.Size = new Size(637, 17);
             tsSpacer.Spring = true;
             // 
             // tsMatches

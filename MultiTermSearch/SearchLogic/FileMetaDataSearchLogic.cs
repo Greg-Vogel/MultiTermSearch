@@ -1,9 +1,9 @@
 ﻿using MultiTermSearch.Classes;
 using MultiTermSearch.Helpers;
 
-namespace MultiTermSearch.Logic;
+namespace MultiTermSearch.SearchLogic;
 
-internal class FileMetaDataSearchLogic
+internal static class FileMetaDataSearchLogic
 {
     /// <summary>
     /// Checks if we should exclude the current file being searched based on the directory it is in
@@ -49,7 +49,7 @@ internal class FileMetaDataSearchLogic
     {
         string fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
 
-        LineResult? lineResult = null;
+        LineResult? fileNameLineResult = null;
         foreach (var regex in RegexHelper.CompiledRegex)
         {
             if (cancelToken.IsCancellationRequested)
@@ -63,24 +63,27 @@ internal class FileMetaDataSearchLogic
                 continue;
 
             // if this is the first matching term for this fileName, create a new result obj for it
-            if (lineResult == null)
-                lineResult = new LineResult() { LineNumber = 0, Line = fileName };
+            if (fileNameLineResult == null)
+                fileNameLineResult = new LineResult() { LineNumber = 0, Line = fileName };
 
             // Add the matches for this term to the line
-            lineResult.AddTermResult(new TermResult()
+            fileNameLineResult.AddTermResult(new TermResult()
             {
                 Term = regex.SearchTerm,
                 IndexOfMatches = matches.Select(m => m.Index).ToArray()
             });
         }
 
-        if (lineResult != null)
-        {
-            FileResult? result = new FileResult(filePath);
-            result.AddLineResult(lineResult);
-            return result;
-        }
 
-        return null;
+        // If we did not get a matching file name... just stop here
+        if (fileNameLineResult == null)
+            return null;
+
+
+        // If we got here... then we have a file name that meets our search criteria
+        //    Add the filename as if it were a line result in the file so the display has something to count/show
+        var result = new FileResult(filePath);
+        result.AddLineResult(fileNameLineResult);
+        return result;
     }
 }

@@ -1,5 +1,5 @@
-﻿using MultiTermSearch.Classes;
-using System.Data;
+﻿using System.Data;
+using MultiTermSearch.Classes;
 
 namespace MultiTermSearch;
 
@@ -178,7 +178,7 @@ public partial class ResultsControl : UserControl
         {
             currentColWidth += lvFiles.Columns[i].Width;
         }
-        int borderBuffer = 4;
+        int borderBuffer = 6;
         if (lvFiles.Width > currentColWidth + borderBuffer)
             lvFiles.Columns[(int)ColIndexes.ShortFilePath].Width += (lvFiles.Width - currentColWidth - borderBuffer);
     }

@@ -1,7 +1,7 @@
-using MultiTermSearch.Logic;
 using MultiTermSearch.Classes;
 using MultiTermSearch.Events;
 using MultiTermSearch.Properties;
+using MultiTermSearch.SearchLogic;
 
 namespace MultiTermSearch;
 
@@ -12,6 +12,8 @@ public partial class MTS : Form
     private int _totalFiles = 0;
     private int _filesMatching = 0;
     private int _filesSearched = 0;
+    private int _progressFilesPerStep = 1;
+    private decimal _progressStepSize = 1.0m;
 
     public MTS()
     {
@@ -142,37 +144,47 @@ public partial class MTS : Form
 
     private void UpdateStatusDisplay(string? status)
     {
-        tsStatus.Value = _totalFiles == 0 ? 0 : Convert.ToInt32(Convert.ToDecimal(_filesSearched) / Convert.ToDecimal(_totalFiles) * 100);
+        // Only worry about updating the progress bar when we reach a step threshold
+        //    Or if we are setting a significant value like 0 or 100
+        if (_totalFiles == 0 || status == "Finished")
+            tsStatus.Value = 0;
+        else if (_totalFiles == _filesSearched)
+            tsStatus.Value = 100;
+        else
+        {
+            int newProgressValue = Convert.ToInt32((Convert.ToDecimal(_filesSearched) / Convert.ToDecimal(_totalFiles)) * 100.0m);
+            if (newProgressValue != tsStatus.Value)
+                tsStatus.Value = newProgressValue;
+        }
+
+
         tsMatches.Text = $"Files Matching: {_filesMatching}";
         tsTotal.Text = $"Files Scanned: {_filesSearched}";
 
         if (status == null)
             return;
-        if (status == "Finished")
-        {
-            tsStatus.Value = 0;
-            if (tsStatusLabel.Text == "Cancelling...")
-            {
-                tsStatusLabel.Text = $"Cancelled after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
-                return;
-            }
-            else if (tsStatusLabel.Text == "Cancelled")
-            {
-                return;
-            }
-            tsStatusLabel.Text = $"Finished after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
-        }
-        else
+
+        if (status != "Finished")
         {
             tsStatusLabel.Text = status;
+            return;
         }
 
+        if (tsStatusLabel.Text == "Cancelling...")
+        {
+            tsStatusLabel.Text = $"Cancelled after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
+            return;
+        }
+        else if (tsStatusLabel.Text == "Cancelled")
+        {
+            return;
+        }
+        tsStatusLabel.Text = $"Finished after {_searcher?.SearchTimer.Elapsed.TotalSeconds} seconds.";
     }
 
     private void Searcher_FileListIdentifiedEvent(object? sender, FileListIdentifiedEventArgs e)
     {
         _totalFiles = e.FileCount;
-        UpdateStatusDisplay(null);
     }
 
     private void Searcher_FileSearchedEvent(object? sender, ItemAddedEventArgs e)

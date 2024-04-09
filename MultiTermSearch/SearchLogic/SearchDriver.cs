@@ -1,11 +1,10 @@
-﻿using MultiTermSearch.Classes;
-using MultiTermSearch.Events;
-using System.ComponentModel;
-using System.Collections.Concurrent;
-using MultiTermSearch.Helpers;
+﻿using System.ComponentModel;
 using System.Diagnostics;
+using MultiTermSearch.Classes;
+using MultiTermSearch.Events;
+using MultiTermSearch.Helpers;
 
-namespace MultiTermSearch.Logic;
+namespace MultiTermSearch.SearchLogic;
 
 internal class SearchDriver
 {
