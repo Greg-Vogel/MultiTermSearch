@@ -55,13 +55,6 @@
             txtPath = new TextBox();
             descPath = new Label();
             resultsControl1 = new ResultsControl();
-            statusStrip1 = new StatusStrip();
-            tsStatus = new ToolStripProgressBar();
-            tsStatusLabel = new ToolStripStatusLabel();
-            tsSpacer = new ToolStripStatusLabel();
-            tsMatches = new ToolStripStatusLabel();
-            toolStripStatusLabel3 = new ToolStripStatusLabel();
-            tsTotal = new ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)scMain).BeginInit();
             scMain.Panel1.SuspendLayout();
             scMain.Panel2.SuspendLayout();
@@ -71,7 +64,6 @@
             panel3.SuspendLayout();
             grpSearchTarget.SuspendLayout();
             panel1.SuspendLayout();
-            statusStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // scMain
@@ -102,7 +94,6 @@
             // scMain.Panel2
             // 
             scMain.Panel2.Controls.Add(resultsControl1);
-            scMain.Panel2.Controls.Add(statusStrip1);
             scMain.Panel2.Padding = new Padding(5, 5, 5, 0);
             scMain.Size = new Size(1415, 911);
             scMain.SplitterDistance = 295;
@@ -399,55 +390,8 @@
             resultsControl1.Dock = DockStyle.Fill;
             resultsControl1.Location = new Point(5, 5);
             resultsControl1.Name = "resultsControl1";
-            resultsControl1.Size = new Size(1106, 884);
+            resultsControl1.Size = new Size(1106, 906);
             resultsControl1.TabIndex = 1;
-            // 
-            // statusStrip1
-            // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { tsStatus, tsStatusLabel, tsSpacer, tsMatches, toolStripStatusLabel3, tsTotal });
-            statusStrip1.Location = new Point(5, 889);
-            statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1106, 22);
-            statusStrip1.TabIndex = 0;
-            statusStrip1.Text = "statusStrip1";
-            // 
-            // tsStatus
-            // 
-            tsStatus.MarqueeAnimationSpeed = 1;
-            tsStatus.Name = "tsStatus";
-            tsStatus.Size = new Size(200, 16);
-            tsStatus.Step = 1;
-            tsStatus.Style = ProgressBarStyle.Continuous;
-            // 
-            // tsStatusLabel
-            // 
-            tsStatusLabel.Name = "tsStatusLabel";
-            tsStatusLabel.Size = new Size(16, 17);
-            tsStatusLabel.Text = "...";
-            // 
-            // tsSpacer
-            // 
-            tsSpacer.Name = "tsSpacer";
-            tsSpacer.Size = new Size(637, 17);
-            tsSpacer.Spring = true;
-            // 
-            // tsMatches
-            // 
-            tsMatches.Name = "tsMatches";
-            tsMatches.Size = new Size(99, 17);
-            tsMatches.Text = "Matching Files: ...";
-            // 
-            // toolStripStatusLabel3
-            // 
-            toolStripStatusLabel3.Name = "toolStripStatusLabel3";
-            toolStripStatusLabel3.Size = new Size(10, 17);
-            toolStripStatusLabel3.Text = "|";
-            // 
-            // tsTotal
-            // 
-            tsTotal.Name = "tsTotal";
-            tsTotal.Size = new Size(96, 17);
-            tsTotal.Text = "Files Searched: ...";
             // 
             // MTS
             // 
@@ -462,7 +406,6 @@
             scMain.Panel1.ResumeLayout(false);
             scMain.Panel1.PerformLayout();
             scMain.Panel2.ResumeLayout(false);
-            scMain.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)scMain).EndInit();
             scMain.ResumeLayout(false);
             grpFilterPatterns.ResumeLayout(false);
@@ -473,8 +416,6 @@
             grpSearchTarget.ResumeLayout(false);
             grpSearchTarget.PerformLayout();
             panel1.ResumeLayout(false);
-            statusStrip1.ResumeLayout(false);
-            statusStrip1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -485,7 +426,6 @@
         private Label descSearchTerms;
         private TextBox txtPath;
         private Label descPath;
-        private StatusStrip statusStrip1;
         private Button btnBrowse;
         private RichTextBox rtSearchTerms;
         private Panel panel1;
@@ -505,12 +445,6 @@
         private CheckBox chkFilterFileContains;
         private CheckBox chkFilterLineContains;
         private CheckBox chkExcludeLargeDir;
-        private ToolStripProgressBar tsStatus;
-        private ToolStripStatusLabel tsSpacer;
-        private ToolStripStatusLabel tsMatches;
-        private ToolStripStatusLabel toolStripStatusLabel3;
-        private ToolStripStatusLabel tsTotal;
-        private ToolStripStatusLabel tsStatusLabel;
         private ComboBox cbThreads;
         private Label label2;
     }

@@ -41,16 +41,31 @@
             cmsFiles = new ContextMenuStrip(components);
             panel1 = new Panel();
             rtDetails = new RichTextBox();
+            statusStrip1 = new StatusStrip();
+            tsProgress = new ToolStripProgressBar();
+            tsStatus = new ToolStripStatusLabel();
+            tsMatchesDesc = new ToolStripStatusLabel();
+            tsMatches = new ToolStripStatusLabel();
+            tsSep1 = new ToolStripStatusLabel();
+            tsFilesScannedDesc = new ToolStripStatusLabel();
+            tsFilesScanned = new ToolStripStatusLabel();
+            tsSep2 = new ToolStripStatusLabel();
+            tsExcludedDesc = new ToolStripStatusLabel();
+            tsExcluded = new ToolStripStatusLabel();
+            tsSep3 = new ToolStripStatusLabel();
+            tsTotalDesc = new ToolStripStatusLabel();
+            tsTotal = new ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             panel1.SuspendLayout();
+            statusStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // splitContainer1
             // 
-            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             splitContainer1.Location = new Point(0, 0);
             splitContainer1.Name = "splitContainer1";
             splitContainer1.Orientation = Orientation.Horizontal;
@@ -62,8 +77,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(panel1);
-            splitContainer1.Size = new Size(1063, 733);
-            splitContainer1.SplitterDistance = 354;
+            splitContainer1.Size = new Size(1063, 708);
+            splitContainer1.SplitterDistance = 341;
             splitContainer1.TabIndex = 0;
             // 
             // lvFiles
@@ -78,7 +93,7 @@
             lvFiles.Location = new Point(0, 0);
             lvFiles.MultiSelect = false;
             lvFiles.Name = "lvFiles";
-            lvFiles.Size = new Size(1063, 354);
+            lvFiles.Size = new Size(1063, 341);
             lvFiles.TabIndex = 0;
             lvFiles.UseCompatibleStateImageBehavior = false;
             lvFiles.View = View.Details;
@@ -133,7 +148,7 @@
             panel1.Location = new Point(0, 0);
             panel1.Name = "panel1";
             panel1.Padding = new Padding(1);
-            panel1.Size = new Size(1063, 375);
+            panel1.Size = new Size(1063, 363);
             panel1.TabIndex = 0;
             // 
             // rtDetails
@@ -143,14 +158,105 @@
             rtDetails.Font = new Font("Courier New", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             rtDetails.Location = new Point(1, 1);
             rtDetails.Name = "rtDetails";
-            rtDetails.Size = new Size(1061, 373);
+            rtDetails.Size = new Size(1061, 361);
             rtDetails.TabIndex = 0;
             rtDetails.Text = "";
+            // 
+            // statusStrip1
+            // 
+            statusStrip1.Items.AddRange(new ToolStripItem[] { tsProgress, tsStatus, tsMatchesDesc, tsMatches, tsSep1, tsFilesScannedDesc, tsFilesScanned, tsSep2, tsExcludedDesc, tsExcluded, tsSep3, tsTotalDesc, tsTotal });
+            statusStrip1.Location = new Point(0, 711);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Size = new Size(1063, 22);
+            statusStrip1.TabIndex = 1;
+            statusStrip1.Text = "statusStrip1";
+            // 
+            // tsProgress
+            // 
+            tsProgress.MarqueeAnimationSpeed = 1;
+            tsProgress.Name = "tsProgress";
+            tsProgress.Size = new Size(200, 16);
+            tsProgress.Step = 1;
+            // 
+            // tsStatus
+            // 
+            tsStatus.Name = "tsStatus";
+            tsStatus.Size = new Size(408, 17);
+            tsStatus.Spring = true;
+            tsStatus.Text = "...";
+            tsStatus.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // tsMatchesDesc
+            // 
+            tsMatchesDesc.Name = "tsMatchesDesc";
+            tsMatchesDesc.Size = new Size(87, 17);
+            tsMatchesDesc.Text = "Matching Files:";
+            // 
+            // tsMatches
+            // 
+            tsMatches.Name = "tsMatches";
+            tsMatches.Size = new Size(16, 17);
+            tsMatches.Text = "...";
+            // 
+            // tsSep1
+            // 
+            tsSep1.Name = "tsSep1";
+            tsSep1.Size = new Size(10, 17);
+            tsSep1.Text = "|";
+            // 
+            // tsFilesScannedDesc
+            // 
+            tsFilesScannedDesc.Name = "tsFilesScannedDesc";
+            tsFilesScannedDesc.Size = new Size(81, 17);
+            tsFilesScannedDesc.Text = "Files Scanned:";
+            // 
+            // tsFilesScanned
+            // 
+            tsFilesScanned.Name = "tsFilesScanned";
+            tsFilesScanned.Size = new Size(16, 17);
+            tsFilesScanned.Text = "...";
+            // 
+            // tsSep2
+            // 
+            tsSep2.Name = "tsSep2";
+            tsSep2.Size = new Size(10, 17);
+            tsSep2.Text = "|";
+            // 
+            // tsExcludedDesc
+            // 
+            tsExcludedDesc.Name = "tsExcludedDesc";
+            tsExcludedDesc.Size = new Size(84, 17);
+            tsExcludedDesc.Text = "Excluded Files:";
+            // 
+            // tsExcluded
+            // 
+            tsExcluded.Name = "tsExcluded";
+            tsExcluded.Size = new Size(16, 17);
+            tsExcluded.Text = "...";
+            // 
+            // tsSep3
+            // 
+            tsSep3.Name = "tsSep3";
+            tsSep3.Size = new Size(10, 17);
+            tsSep3.Text = "|";
+            // 
+            // tsTotalDesc
+            // 
+            tsTotalDesc.Name = "tsTotalDesc";
+            tsTotalDesc.Size = new Size(61, 17);
+            tsTotalDesc.Text = "Total Files:";
+            // 
+            // tsTotal
+            // 
+            tsTotal.Name = "tsTotal";
+            tsTotal.Size = new Size(16, 17);
+            tsTotal.Text = "...";
             // 
             // ResultsControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(statusStrip1);
             Controls.Add(splitContainer1);
             Name = "ResultsControl";
             Size = new Size(1063, 733);
@@ -160,7 +266,10 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             panel1.ResumeLayout(false);
+            statusStrip1.ResumeLayout(false);
+            statusStrip1.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -177,5 +286,19 @@
         private ColumnHeader columnHeader6;
         private ContextMenuStrip cmsFiles;
         private ColumnHeader columnHeader7;
+        private StatusStrip statusStrip1;
+        private ToolStripProgressBar tsProgress;
+        private ToolStripStatusLabel tsStatus;
+        private ToolStripStatusLabel tsMatchesDesc;
+        private ToolStripStatusLabel tsSep1;
+        private ToolStripStatusLabel tsExcludedDesc;
+        private ToolStripStatusLabel tsSep2;
+        private ToolStripStatusLabel tsTotalDesc;
+        private ToolStripStatusLabel tsMatches;
+        private ToolStripStatusLabel tsExcluded;
+        private ToolStripStatusLabel tsTotal;
+        private ToolStripStatusLabel tsFilesScannedDesc;
+        private ToolStripStatusLabel tsFilesScanned;
+        private ToolStripStatusLabel tsSep3;
     }
 }

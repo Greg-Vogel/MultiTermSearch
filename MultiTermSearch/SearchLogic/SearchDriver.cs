@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
+using System.Security.AccessControl;
 using MultiTermSearch.Classes;
 using MultiTermSearch.Events;
 using MultiTermSearch.Helpers;
@@ -14,10 +16,12 @@ internal class SearchDriver
     internal bool SearchInProgress { get { return _searchInProgress; } }
     private CancellationTokenSource _cancellationTokenSource = null!;
     public Stopwatch SearchTimer { get; private set; } = new Stopwatch();
+    public string SearchPath { get; private set; } = string.Empty;
 
 
     internal event EventHandler<FileListIdentifiedEventArgs>? FileListIdentifiedEvent;
-    internal event EventHandler<ItemAddedEventArgs>? FileSearchedEvent;
+    internal event EventHandler<ItemAddedEventArgs>? FileProcessedEvent;
+    internal event EventHandler<EventArgs>? FileSkppedEvent;
     internal event EventHandler<EventArgs>? SearchCompleteEvent;
 
 
@@ -45,6 +49,9 @@ internal class SearchDriver
         // Prep the searchDriver if needed
         InitializeSearchDriver();
 
+        // expose the search path that we are posting results for
+        SearchPath = inputs.Path;
+
         // start the actual search
         ClearHelpers();
         _searchInProgress = true;
@@ -68,8 +75,21 @@ internal class SearchDriver
     /// </summary>
     private void ClearHelpers()
     {
-        FileQueueHelper.ClearFileQueue();
+        FileSystemHelper.ClearFileQueue();
         RegexHelper.ClearCompiledQueries();
+    }
+
+    private bool SkipScanningFile(string filePath, SearchInputs inputs)
+    {
+        // 1. Check if we should exclude this file because of the directory it is in
+        if (FileMetaDataSearchLogic.ExcludeDirectory(filePath, inputs))
+            return true;
+
+        // 2. Check file type
+        if (!FileMetaDataSearchLogic.IsValidFileType(filePath, inputs))
+            return true;
+
+        return false;
     }
 
     /// <summary>
@@ -79,25 +99,14 @@ internal class SearchDriver
     /// <param name="inputs"></param>
     /// <param name="compiledRegex"></param>
     /// <returns></returns>
-    private async Task<FileResult?> ScanObjectForMatch(string filePath, SearchInputs inputs, CancellationToken cancelToken)
+    private async Task<FileResult?> ScanFileForMatch(string filePath, SearchInputs inputs, CancellationToken cancelToken)
     {
-        // 1. Check if we should exclude this file because of the directory it is in
-        if (FileMetaDataSearchLogic.ExcludeDirectory(filePath, inputs))
-            return null;
-
-        // 2. Check file type
-        if (!FileMetaDataSearchLogic.IsValidFileType(filePath, inputs))
-            return null;
-
-        if (cancelToken.IsCancellationRequested)
-            return null;
-
-        // 3. Check the file contents
+        // 1. Check the file contents
         if (inputs.Target == SearchInputs.ESearchTargets.FileContents || inputs.Target == SearchInputs.ESearchTargets.Both)
         {
             var result = await ContentSearchLogic.ScanFileContents(filePath, inputs, cancelToken);
 
-            // If we got a result here... no need to check the file name
+            // If we got a result here other than access denied... no need to check anything further, just return the results
             if (result != null)
                 return result;
         }
@@ -105,7 +114,8 @@ internal class SearchDriver
         if (cancelToken.IsCancellationRequested)
             return null;
 
-        // 4. Last resort... check if the file name matches
+        // 2. The contents did not have a match
+        //     If the user chose to include filenames check if the file name is a match
         if (inputs.Target == SearchInputs.ESearchTargets.FileNames || inputs.Target == SearchInputs.ESearchTargets.Both)
             return FileMetaDataSearchLogic.ScanFileName(filePath, cancelToken);
 
@@ -128,8 +138,8 @@ internal class SearchDriver
 
         // Get the queue of files we need to scan
         //    once we have that list, we can report the count back to the parent
-        FileQueueHelper.LoadFileQueue(inputs).Wait();
-        FileListIdentifiedEvent?.Invoke(this, new FileListIdentifiedEventArgs(FileQueueHelper.FileQueue.Count));
+        FileSystemHelper.LoadFileQueue(inputs).Wait();
+        FileListIdentifiedEvent?.Invoke(this, new FileListIdentifiedEventArgs(FileSystemHelper.FileQueue.Count));
 
 
         // Start the desired number of worker threads
@@ -146,14 +156,32 @@ internal class SearchDriver
 
                         // continuously loop until we have exhausted our queue
                         //    once no more files are left it will automatically exit
-                        while (FileQueueHelper.FileQueue.TryDequeue(out var file))
+                        while (FileSystemHelper.FileQueue.TryDequeue(out var file))
                         {
-                            var result = await ScanObjectForMatch(file, inputs, cancelToken);
+                            if (cancelToken.IsCancellationRequested)
+                                return;
+
+                            // If the file should be excluded from the scan... report back that we skipped one
+                            if (SkipScanningFile(file, inputs))
+                            {
+                                _driver.ReportProgress(0);
+                                continue;
+                            }
 
                             if (cancelToken.IsCancellationRequested)
                                 return;
 
-                            _driver.ReportProgress(1, result);
+                            // The file should be included... run through the actual scan logic
+                            var result = await ScanFileForMatch(file, inputs, cancelToken);
+
+                            if (cancelToken.IsCancellationRequested)
+                                return;
+
+                            // For now... if we did not have access to the file, count it as skipped
+                            if (result is not null && result.AccessDenied)
+                                _driver.ReportProgress(0);
+                            else
+                                _driver.ReportProgress(1, result);
                         }
                     }
                 ).Wait();
@@ -166,16 +194,23 @@ internal class SearchDriver
         // Once the above ForEachAsync returns... the queue should be exhausted and all threads returned/completed.
         //   We can just let the method return
     }
+
+    private static EventArgs _skippedArgs = new EventArgs();
+    private static ItemAddedEventArgs _emptyResultArgs = new ItemAddedEventArgs();
     private void SearchDriver_Report(object? sender, ProgressChangedEventArgs e)
     {
         switch (e.ProgressPercentage)
         {
+            // A '0' means the file was skipped per the users filter criteria
             case 0:
-                FileListIdentifiedEvent?.Invoke(this, new FileListIdentifiedEventArgs(e.UserState is null ? 0 : (int)e.UserState));
+                FileSkppedEvent?.Invoke(this, _skippedArgs);
                 break;
 
+            // A '1' means the file was at least scanned
             case 1:
-                FileSearchedEvent?.Invoke(this, new ItemAddedEventArgs(e.UserState is null ? null : (FileResult)e.UserState));
+                FileProcessedEvent?.Invoke(this, e.UserState is null 
+                    ? _emptyResultArgs 
+                    : new ItemAddedEventArgs((FileResult?)e.UserState));
                 break;
         }
     }

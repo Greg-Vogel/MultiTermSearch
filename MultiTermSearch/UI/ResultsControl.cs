@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using MultiTermSearch.Classes;
 
 namespace MultiTermSearch;
@@ -12,6 +13,11 @@ public partial class ResultsControl : UserControl
     private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
     private System.Timers.Timer _updateTimer;
     private string _selectedFilePath = string.Empty;
+    private int _totalFiles = 0;
+    private int _filesMatching = 0;
+    private int _filesExcluded = 0;
+    private int _filesSearched = 0;
+    private Stopwatch _searchTimer = new Stopwatch();
 
     ToolStripButton cmsButtonCopySelectedFileName = null!;
     ToolStripButton cmsButtonCopySelectedFilePath = null!;
@@ -60,46 +66,117 @@ public partial class ResultsControl : UserControl
         cmsButtonCopyAllFilePaths.Click += CmsButtonCopyAllFilePaths_Click;
     }
 
-    public void BeginResultUpdates(string rootSearchDir)
+    public void SetSearchBegin(string rootSearchDir)
     {
         _rootDir = rootSearchDir.EndsWith("\\") ? rootSearchDir : rootSearchDir + "\\";
         _updateTimer.Start();
+        _searchTimer.Restart();
+        tsStatus.Text = "Searching...";
     }
-    public void EndResultUpdates()
+    public void SetSearchCancelling()
     {
+        tsStatus.Text = "Cancelling...";
+    }
+    public void SetSearchComplete()
+    {
+        _searchTimer.Stop();
         _updateTimer.Stop();
 
+        tsProgress.Value = 0;
+        if (tsStatus.Text == "Cancelling...")
+            tsStatus.Text = $"Cancelled after {_searchTimer.Elapsed.TotalSeconds} seconds.";
+        else
+            tsStatus.Text = $"Finished after {_searchTimer.Elapsed.TotalSeconds} seconds.";
+
         // perform one last update to the UI to make sure all results are drawn
-        UpdateFileList();
+        Results_UpdateFileList();
     }
-    private void UpdateTimer_ElapsedEvent(object? sender, System.Timers.ElapsedEventArgs e)
-    {
-        // if no items were found during this time... skip updating
-        if (_lastResultCount == _results.Count)
-            return;
-
-        // We have something new to draw...
-        //   Trigger the redraw back on the UI thread, not this timer thread
-        lvFiles.Invoke(UpdateFileList);
-    }
-
 
     public void ClearResults()
     {
+        _totalFiles = 0;
+        _filesMatching = 0;
+        _filesExcluded = 0;
+        _filesSearched = 0;
+        StatusBar_ResetFields();
+
         _results.Clear();
         lvFiles.Items.Clear();
         rtDetails.Clear();
         lvFiles.ContextMenuStrip = null;
         _lastResultCount = 0;
     }
-
-    public void AddResult(FileResult result)
+    private void StatusBar_ResetFields()
     {
-        // always store the result sent to us
-        _results.Add(result);
+        tsStatus.Text = "...";
+        tsTotal.Text = "...";
+        tsExcluded.Text = "...";
+        tsFilesScanned.Text = "...";
+        tsMatches.Text = "...";
+    }
+    private void StatusBar_RefreshProgressBar()
+    {
+        // no files found...
+        if (_totalFiles == 0)
+        {
+            tsProgress.Value = 0;
+            return;
+        }
+
+        // no progress or finished... we want to show an empty bar for both
+        if (_filesSearched == 0 || _filesSearched == _totalFiles)
+        {
+            tsProgress.Value = 0;
+            return;
+        }
+
+        // we have some progress
+        //   calcluate out the amount out of 100...
+        int prog = Convert.ToInt32((Convert.ToDecimal(_filesSearched + _filesExcluded) / Convert.ToDecimal(_totalFiles)) * 100.0m);
+
+        // if the new progress is not a significant change over our current progress value... dont set it
+        if (prog != tsProgress.Value)
+        {
+            // this backwards progress and then forwards tricks the control to skip its slow animation
+            tsProgress.Value = Math.Min(100, prog + 2);
+            tsProgress.Value = prog;
+            statusStrip1.Update();
+        }
     }
 
-    private void UpdateFileList()
+    public void AddResult(FileResult? result)
+    {
+        // if the result was not null, then it is a match
+        if (result is not null)
+        { 
+            _filesMatching++;
+            _results.Add(result);
+            tsMatches.Text = _filesMatching.ToString();
+        }
+
+        // always increment the search count even if the result is null
+        //   we want to count the ones where no matches were found too
+        _filesSearched++;
+        tsFilesScanned.Text = _filesSearched.ToString();
+
+        // move the progress bar along
+        StatusBar_RefreshProgressBar();
+    }
+    public void IncrementExcludedCount()
+    {
+        _filesExcluded++;
+        tsExcluded.Text = _filesExcluded.ToString();
+        StatusBar_RefreshProgressBar();
+    }
+    public void SetTotalFileCount(int totalFiles)
+    {
+        _totalFiles = totalFiles;
+        tsTotal.Text = _totalFiles.ToString();
+    }
+
+
+
+    private void Results_UpdateFileList()
     {
         // dont let the user click anything while we are in the middle of redrawing its parent
         cmsFiles.Hide();
@@ -183,7 +260,8 @@ public partial class ResultsControl : UserControl
             lvFiles.Columns[(int)ColIndexes.ShortFilePath].Width += (lvFiles.Width - currentColWidth - borderBuffer);
     }
 
-    private void DisplayDetails(string filePath)
+
+    private void Details_UpdateFileDetails(string filePath)
     {
         rtDetails.Clear();
 
@@ -223,6 +301,25 @@ public partial class ResultsControl : UserControl
         rtDetails.ResumeLayout();
         rtDetails.PerformLayout();
     }
+    public void Details_SetText(string text)
+    {
+        rtDetails.Clear();
+        rtDetails.Text = text;
+    }
+
+
+
+
+    private void UpdateTimer_ElapsedEvent(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        // if no items were found during this time... skip updating
+        if (_lastResultCount == _results.Count)
+            return;
+
+        // We have something new to draw...
+        //   Trigger the redraw back on the UI thread, not this timer thread
+        lvFiles.Invoke(Results_UpdateFileList);
+    }
 
 
     private void lvFiles_SelectedIndexChanged(object? sender, EventArgs e)
@@ -234,14 +331,7 @@ public partial class ResultsControl : UserControl
         var item = lvFiles.SelectedItems[0];
         _selectedFilePath = item.SubItems[(int)ColIndexes.FullFilePath].Text;
 
-        DisplayDetails(_selectedFilePath);
-    }
-
-
-    private void ResultsControl_SizeChanged(object sender, EventArgs e)
-    {
-        // make sure the results expand and contract along with the window
-        AdjustFileResultColumnWidths();
+        Details_UpdateFileDetails(_selectedFilePath);
     }
 
 
@@ -290,5 +380,12 @@ public partial class ResultsControl : UserControl
             cmsFiles.Items.Add(cmsButtonCopyAllFileNames);
             cmsFiles.Items.Add(cmsButtonCopyAllFilePaths);
         }
+    }
+
+
+    private void ResultsControl_SizeChanged(object sender, EventArgs e)
+    {
+        // make sure the results expand and contract along with the window
+        AdjustFileResultColumnWidths();
     }
 }

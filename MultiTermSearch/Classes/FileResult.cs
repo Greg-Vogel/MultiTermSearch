@@ -3,9 +3,15 @@
 public class FileResult
 {
     public string FilePath { get; set; } = null!;
+    public bool AccessDenied { get; set; } = false;
     public List<LineResult> LineResults { get; set; } = new List<LineResult>();
 
     public FileResult(string filePath) { FilePath = filePath; }
+    public FileResult(string filePath, bool accessDenied)
+    {
+        FilePath = filePath;
+        AccessDenied = accessDenied;
+    }
 
     public void AddLineResult(LineResult lineResult)
     {
