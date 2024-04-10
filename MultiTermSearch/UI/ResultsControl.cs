@@ -9,9 +9,10 @@ public partial class ResultsControl : UserControl
     private List<FileResult> _results = new List<FileResult>();
     private string _rootDir = string.Empty;
     private Color _highlightColor = Color.Khaki;
-    private int _lastResultCount = 0;
     private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
-    private System.Timers.Timer _updateTimer;
+    private DateTime _lastFileResultUpdate = DateTime.UtcNow;
+    private DateTime _lastExcludedFileCountUpdate = DateTime.UtcNow;
+    private DateTime _lastScannedFileCountUpdate = DateTime.UtcNow;
     private string _selectedFilePath = string.Empty;
     private int _totalFiles = 0;
     private int _filesMatching = 0;
@@ -45,8 +46,6 @@ public partial class ResultsControl : UserControl
         lvFiles.GetType()?
             .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
             .SetValue(lvFiles, true, null);
-        _updateTimer = new System.Timers.Timer(_millisecondRefreshFrequency) { AutoReset = true };
-        _updateTimer.Elapsed += UpdateTimer_ElapsedEvent;
 
         SetupContextMenuStrip();
     }
@@ -69,7 +68,6 @@ public partial class ResultsControl : UserControl
     public void SetSearchBegin(string rootSearchDir)
     {
         _rootDir = rootSearchDir.EndsWith("\\") ? rootSearchDir : rootSearchDir + "\\";
-        _updateTimer.Start();
         _searchTimer.Restart();
         tsStatus.Text = "Searching...";
     }
@@ -80,7 +78,6 @@ public partial class ResultsControl : UserControl
     public void SetSearchComplete()
     {
         _searchTimer.Stop();
-        _updateTimer.Stop();
 
         tsProgress.Value = 0;
         if (tsStatus.Text == "Cancelling...")
@@ -89,6 +86,9 @@ public partial class ResultsControl : UserControl
             tsStatus.Text = $"Finished after {_searchTimer.Elapsed.TotalSeconds} seconds.";
 
         // perform one last update to the UI to make sure all results are drawn
+        //    since some could have came in during the refresh delay period
+        tsFilesScanned.Text = _filesSearched.ToString();
+        tsExcluded.Text = _filesExcluded.ToString();
         Results_UpdateFileList();
     }
 
@@ -104,7 +104,6 @@ public partial class ResultsControl : UserControl
         lvFiles.Items.Clear();
         rtDetails.Clear();
         lvFiles.ContextMenuStrip = null;
-        _lastResultCount = 0;
     }
     private void StatusBar_ResetFields()
     {
@@ -151,13 +150,28 @@ public partial class ResultsControl : UserControl
         { 
             _filesMatching++;
             _results.Add(result);
+
+            // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
+            if ((DateTime.UtcNow - _lastFileResultUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
+            {
+                Results_UpdateFileList();
+                _lastFileResultUpdate = DateTime.UtcNow;
+            }
+
+            // We arnt expecting this value to be spammed that much... go ahead and always update it
             tsMatches.Text = _filesMatching.ToString();
         }
 
         // always increment the search count even if the result is null
         //   we want to count the ones where no matches were found too
         _filesSearched++;
-        tsFilesScanned.Text = _filesSearched.ToString();
+
+        // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
+        if ((DateTime.UtcNow - _lastScannedFileCountUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
+        {
+            tsFilesScanned.Text = _filesSearched.ToString();
+            _lastScannedFileCountUpdate = DateTime.UtcNow;
+        }
 
         // move the progress bar along
         StatusBar_RefreshProgressBar();
@@ -165,7 +179,14 @@ public partial class ResultsControl : UserControl
     public void IncrementExcludedCount()
     {
         _filesExcluded++;
-        tsExcluded.Text = _filesExcluded.ToString();
+
+        // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
+        if ((DateTime.UtcNow - _lastExcludedFileCountUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
+        {
+            tsExcluded.Text = _filesExcluded.ToString();
+            _lastExcludedFileCountUpdate = DateTime.UtcNow;
+        }
+
         StatusBar_RefreshProgressBar();
     }
     public void SetTotalFileCount(int totalFiles)
@@ -233,9 +254,6 @@ public partial class ResultsControl : UserControl
         // turn the context menu strip back on now that we are done updating its parent
         cmsFiles.Enabled = true;
         lvFiles.ContextMenuStrip = cmsFiles;
-
-        // let our UI refresh checks know what we drew this time
-        _lastResultCount = _results.Count;
     }
 
     private void AdjustFileResultColumnWidths()
@@ -306,21 +324,6 @@ public partial class ResultsControl : UserControl
         rtDetails.Clear();
         rtDetails.Text = text;
     }
-
-
-
-
-    private void UpdateTimer_ElapsedEvent(object? sender, System.Timers.ElapsedEventArgs e)
-    {
-        // if no items were found during this time... skip updating
-        if (_lastResultCount == _results.Count)
-            return;
-
-        // We have something new to draw...
-        //   Trigger the redraw back on the UI thread, not this timer thread
-        lvFiles.Invoke(Results_UpdateFileList);
-    }
-
 
     private void lvFiles_SelectedIndexChanged(object? sender, EventArgs e)
     {

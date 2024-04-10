@@ -15,8 +15,11 @@ internal class SearchDriver
     private bool _searchInProgress = false;
     internal bool SearchInProgress { get { return _searchInProgress; } }
     private CancellationTokenSource _cancellationTokenSource = null!;
-    public Stopwatch SearchTimer { get; private set; } = new Stopwatch();
+
     public string SearchPath { get; private set; } = string.Empty;
+
+    private int _skippedFileCount = 0;
+    private int _scannedFileCount = 0;
 
 
     internal event EventHandler<FileListIdentifiedEventArgs>? FileListIdentifiedEvent;
@@ -54,8 +57,9 @@ internal class SearchDriver
 
         // start the actual search
         ClearHelpers();
+        _skippedFileCount = 0;
+        _scannedFileCount = 0;
         _searchInProgress = true;
-        SearchTimer.Restart();
         _driver.RunWorkerAsync(inputs);
     }
 
@@ -217,7 +221,6 @@ internal class SearchDriver
     private void SearchDriver_Completed(object? sender, RunWorkerCompletedEventArgs e)
     {
         ClearHelpers();
-        SearchTimer.Stop();
         _searchInProgress = false;
         SearchCompleteEvent?.Invoke(this, e);
     }
