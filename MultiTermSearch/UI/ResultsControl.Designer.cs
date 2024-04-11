@@ -55,6 +55,7 @@
             tsSep3 = new ToolStripStatusLabel();
             tsTotalDesc = new ToolStripStatusLabel();
             tsTotal = new ToolStripStatusLabel();
+            toolTip1 = new ToolTip(components);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -167,6 +168,7 @@
             statusStrip1.Items.AddRange(new ToolStripItem[] { tsProgress, tsStatus, tsMatchesDesc, tsMatches, tsSep1, tsFilesScannedDesc, tsFilesScanned, tsSep2, tsExcludedDesc, tsExcluded, tsSep3, tsTotalDesc, tsTotal });
             statusStrip1.Location = new Point(0, 711);
             statusStrip1.Name = "statusStrip1";
+            statusStrip1.ShowItemToolTips = true;
             statusStrip1.Size = new Size(1063, 22);
             statusStrip1.TabIndex = 1;
             statusStrip1.Text = "statusStrip1";
@@ -191,6 +193,7 @@
             tsMatchesDesc.Name = "tsMatchesDesc";
             tsMatchesDesc.Size = new Size(87, 17);
             tsMatchesDesc.Text = "Matching Files:";
+            tsMatchesDesc.ToolTipText = "Number of files containing a search term in their name or path.";
             // 
             // tsMatches
             // 
@@ -209,6 +212,7 @@
             tsFilesScannedDesc.Name = "tsFilesScannedDesc";
             tsFilesScannedDesc.Size = new Size(81, 17);
             tsFilesScannedDesc.Text = "Files Scanned:";
+            tsFilesScannedDesc.ToolTipText = "Number of files actually read (Path and/or Contents).";
             // 
             // tsFilesScanned
             // 
@@ -227,6 +231,7 @@
             tsExcludedDesc.Name = "tsExcludedDesc";
             tsExcludedDesc.Size = new Size(84, 17);
             tsExcludedDesc.Text = "Excluded Files:";
+            tsExcludedDesc.ToolTipText = "Number of files ignored due to file type or other selected filters.";
             // 
             // tsExcluded
             // 
@@ -245,6 +250,7 @@
             tsTotalDesc.Name = "tsTotalDesc";
             tsTotalDesc.Size = new Size(61, 17);
             tsTotalDesc.Text = "Total Files:";
+            tsTotalDesc.ToolTipText = "Total files identified in the specified Path.";
             // 
             // tsTotal
             // 
@@ -300,5 +306,6 @@
         private ToolStripStatusLabel tsFilesScannedDesc;
         private ToolStripStatusLabel tsFilesScanned;
         private ToolStripStatusLabel tsSep3;
+        private ToolTip toolTip1;
     }
 }
