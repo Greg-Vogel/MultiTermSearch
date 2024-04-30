@@ -3,14 +3,14 @@
 public class FileResult
 {
     public string FilePath { get; set; } = null!;
-    public bool AccessDenied { get; set; } = false;
+    public string? Error { get; set; } = null;
     public List<LineResult> LineResults { get; set; } = new List<LineResult>();
 
     public FileResult(string filePath) { FilePath = filePath; }
-    public FileResult(string filePath, bool accessDenied)
+    public FileResult(string filePath, string errorMessage)
     {
         FilePath = filePath;
-        AccessDenied = accessDenied;
+        Error = errorMessage;
     }
 
     public void AddLineResult(LineResult lineResult)

@@ -145,7 +145,7 @@ public partial class MTS : Form
     private void Searcher_FileProcessedEvent(object? sender, ItemAddedEventArgs e)
     {
         // if we actually got a match, count it and add it to the display
-        resultsControl1.AddResult(e.Item);
+        resultsControl1.HandleResult(e.Item);
     }
     private void Searcher_FileExcludedEvent(object? sender, EventArgs e)
     {

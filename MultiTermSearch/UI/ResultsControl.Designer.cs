@@ -44,6 +44,8 @@
             statusStrip1 = new StatusStrip();
             tsProgress = new ToolStripProgressBar();
             tsStatus = new ToolStripStatusLabel();
+            tsErrorsLink = new ToolStripStatusLabel();
+            tsSep0 = new ToolStripStatusLabel();
             tsMatchesDesc = new ToolStripStatusLabel();
             tsMatches = new ToolStripStatusLabel();
             tsSep1 = new ToolStripStatusLabel();
@@ -165,7 +167,7 @@
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { tsProgress, tsStatus, tsMatchesDesc, tsMatches, tsSep1, tsFilesScannedDesc, tsFilesScanned, tsSep2, tsExcludedDesc, tsExcluded, tsSep3, tsTotalDesc, tsTotal });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { tsProgress, tsStatus, tsErrorsLink, tsSep0, tsMatchesDesc, tsMatches, tsSep1, tsFilesScannedDesc, tsFilesScanned, tsSep2, tsExcludedDesc, tsExcluded, tsSep3, tsTotalDesc, tsTotal });
             statusStrip1.Location = new Point(0, 711);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.ShowItemToolTips = true;
@@ -183,10 +185,28 @@
             // tsStatus
             // 
             tsStatus.Name = "tsStatus";
-            tsStatus.Size = new Size(408, 17);
+            tsStatus.Size = new Size(352, 17);
             tsStatus.Spring = true;
             tsStatus.Text = "...";
             tsStatus.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // tsErrorsLink
+            // 
+            tsErrorsLink.IsLink = true;
+            tsErrorsLink.LinkColor = Color.Blue;
+            tsErrorsLink.Name = "tsErrorsLink";
+            tsErrorsLink.Size = new Size(46, 17);
+            tsErrorsLink.Text = "Errors...";
+            tsErrorsLink.Visible = false;
+            tsErrorsLink.VisitedLinkColor = Color.Blue;
+            tsErrorsLink.Click += tsErrorsLink_Click;
+            // 
+            // tsSep0
+            // 
+            tsSep0.Name = "tsSep0";
+            tsSep0.Size = new Size(10, 17);
+            tsSep0.Text = "|";
+            tsSep0.Visible = false;
             // 
             // tsMatchesDesc
             // 
@@ -307,5 +327,7 @@
         private ToolStripStatusLabel tsFilesScanned;
         private ToolStripStatusLabel tsSep3;
         private ToolTip toolTip1;
+        private ToolStripStatusLabel tsErrorsLink;
+        private ToolStripStatusLabel tsSep0;
     }
 }

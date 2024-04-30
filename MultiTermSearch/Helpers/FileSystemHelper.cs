@@ -1,6 +1,5 @@
 ﻿using MultiTermSearch.Classes;
 using System.Collections.Concurrent;
-using System.Security.AccessControl;
 
 namespace MultiTermSearch.Helpers;
 
@@ -18,8 +17,8 @@ internal static class FileSystemHelper
                 , "*.*"
                 , new EnumerationOptions()
                 {
-                    IgnoreInaccessible = true
-                    , RecurseSubdirectories = inputs.IncludeSubDir
+                    //IgnoreInaccessible = true,   // leaving turned off for now because we added an Error display to show the files that this happens to
+                    RecurseSubdirectories = inputs.IncludeSubDir
                 });
             foreach (var file in filesToScan)
             {

@@ -101,9 +101,9 @@ internal static class ContentSearchLogic
                 // We made it to the end with a valid file result... return it to the caller
                 return result;
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                return new FileResult(filePath, true);
+                return new FileResult(filePath, ex.Message);
             }
         });
     }

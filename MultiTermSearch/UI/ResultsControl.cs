@@ -1,12 +1,14 @@
 ﻿using System.Data;
 using System.Diagnostics;
 using MultiTermSearch.Classes;
+using MultiTermSearch.UI;
 
 namespace MultiTermSearch;
 
 public partial class ResultsControl : UserControl
 {
-    private List<FileResult> _results = new List<FileResult>();
+    private List<FileResult> _filesMatching = new List<FileResult>();
+    private List<FileResult> _filesWithErrors = new List<FileResult>();
     private string _rootDir = string.Empty;
     private Color _highlightColor = Color.Khaki;
     private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
@@ -14,10 +16,11 @@ public partial class ResultsControl : UserControl
     private DateTime _lastExcludedFileCountUpdate = DateTime.UtcNow;
     private DateTime _lastScannedFileCountUpdate = DateTime.UtcNow;
     private string _selectedFilePath = string.Empty;
-    private int _totalFiles = 0;
-    private int _filesMatching = 0;
-    private int _filesExcluded = 0;
-    private int _filesSearched = 0;
+    private int _totalFilesCount = 0;
+    private int _filesMatchingCount = 0;
+    private int _filesExcludedCount = 0;
+    private int _filesSearchedCount = 0;
+    private int _filesWithErrorCount = 0;
     private Stopwatch _searchTimer = new Stopwatch();
 
     ToolStripButton cmsButtonCopySelectedFileName = null!;
@@ -25,6 +28,9 @@ public partial class ResultsControl : UserControl
     ToolStripButton cmsButtonCopyAllFileNames = null!;
     ToolStripButton cmsButtonCopyAllFilePaths = null!;
     ToolStripSeparator cmsSeparator = null!;
+
+    ErrorDisplay? _errDisplay = null;
+
 
     private enum ColIndexes
     {
@@ -87,23 +93,29 @@ public partial class ResultsControl : UserControl
 
         // perform one last update to the UI to make sure all results are drawn
         //    since some could have came in during the refresh delay period
-        tsFilesScanned.Text = _filesSearched.ToString();
-        tsExcluded.Text = _filesExcluded.ToString();
+        tsFilesScanned.Text = _filesSearchedCount.ToString();
+        tsExcluded.Text = _filesExcludedCount.ToString();
         Results_UpdateFileList();
     }
 
     public void ClearResults()
     {
-        _totalFiles = 0;
-        _filesMatching = 0;
-        _filesExcluded = 0;
-        _filesSearched = 0;
+        _totalFilesCount = 0;
+        _filesMatchingCount = 0;
+        _filesExcludedCount = 0;
+        _filesSearchedCount = 0;
+        _filesWithErrorCount = 0;
         StatusBar_ResetFields();
 
-        _results.Clear();
+        _filesMatching.Clear();
+        _filesWithErrors.Clear();
         lvFiles.Items.Clear();
         rtDetails.Clear();
         lvFiles.ContextMenuStrip = null;
+
+        _errDisplay?.Close();
+        _errDisplay?.Dispose();
+        _errDisplay = null;
     }
     private void StatusBar_ResetFields()
     {
@@ -112,18 +124,19 @@ public partial class ResultsControl : UserControl
         tsExcluded.Text = "...";
         tsFilesScanned.Text = "...";
         tsMatches.Text = "...";
+        tsSep0.Visible = tsErrorsLink.Visible = false;
     }
     private void StatusBar_RefreshProgressBar()
     {
         // no files found...
-        if (_totalFiles == 0)
+        if (_totalFilesCount == 0)
         {
             tsProgress.Value = 0;
             return;
         }
 
         // no progress or finished... we want to show an empty bar for both
-        if (_filesSearched == 0 || _filesSearched == _totalFiles)
+        if (_filesSearchedCount == 0 || _filesSearchedCount == _totalFilesCount)
         {
             tsProgress.Value = 0;
             return;
@@ -131,7 +144,7 @@ public partial class ResultsControl : UserControl
 
         // we have some progress
         //   calcluate out the amount out of 100...
-        int prog = Convert.ToInt32((Convert.ToDecimal(_filesSearched + _filesExcluded) / Convert.ToDecimal(_totalFiles)) * 100.0m);
+        int prog = Convert.ToInt32((Convert.ToDecimal(_filesSearchedCount + _filesExcludedCount) / Convert.ToDecimal(_totalFilesCount)) * 100.0m);
 
         // if the new progress is not a significant change over our current progress value... dont set it
         if (prog != tsProgress.Value)
@@ -143,33 +156,55 @@ public partial class ResultsControl : UserControl
         }
     }
 
-    public void AddResult(FileResult? result)
+    public void HandleResult(FileResult? result)
     {
+        // Always count the record to note that we finsihed looking at a file on the global status count...
+        //    The more specific counts will be handled further below
+        _filesSearchedCount++;
+
+
         // if the result was not null, then it is a match
         if (result is not null)
-        { 
-            _filesMatching++;
-            _results.Add(result);
-
-            // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
-            if ((DateTime.UtcNow - _lastFileResultUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
+        {
+            if (result.Error is null)
             {
-                Results_UpdateFileList();
-                _lastFileResultUpdate = DateTime.UtcNow;
+                _filesMatchingCount++;
+                _filesMatching.Add(result);
+
+                // We arnt expecting this value to be spammed that much... go ahead and always update it
+                tsMatches.Text = _filesMatchingCount.ToString();
+
+                // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
+                if ((DateTime.UtcNow - _lastFileResultUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
+                {
+                    Results_UpdateFileList();
+                    _lastFileResultUpdate = DateTime.UtcNow;
+                }
             }
+            else
+            {
+                _filesWithErrorCount++;
+                _filesWithErrors.Add(result);
+                tsErrorsLink.ToolTipText = $"{_filesWithErrorCount} files encountered an error while scanning.{Environment.NewLine}Click for details...";
 
-            // We arnt expecting this value to be spammed that much... go ahead and always update it
-            tsMatches.Text = _filesMatching.ToString();
+                // If the link to view the errors is not yet visible... set it now
+                if (!tsSep0.Visible)
+                {
+                    tsSep0.Visible = tsErrorsLink.Visible = true;
+                }
+
+                // If the user currently has the Error display up... lets be nice and udpate it automatically with any new errors as they come in.
+                if (_errDisplay is not null)
+                {
+                    _errDisplay.UpdateErrors(_filesWithErrors);
+                }
+            }
         }
-
-        // always increment the search count even if the result is null
-        //   we want to count the ones where no matches were found too
-        _filesSearched++;
 
         // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
         if ((DateTime.UtcNow - _lastScannedFileCountUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
         {
-            tsFilesScanned.Text = _filesSearched.ToString();
+            tsFilesScanned.Text = _filesSearchedCount.ToString();
             _lastScannedFileCountUpdate = DateTime.UtcNow;
         }
 
@@ -178,12 +213,12 @@ public partial class ResultsControl : UserControl
     }
     public void IncrementExcludedCount()
     {
-        _filesExcluded++;
+        _filesExcludedCount++;
 
         // Limits the result control to only refresh once every {x} milliseconds to reduce flickering and freezing the UI
         if ((DateTime.UtcNow - _lastExcludedFileCountUpdate).TotalMilliseconds > _millisecondRefreshFrequency)
         {
-            tsExcluded.Text = _filesExcluded.ToString();
+            tsExcluded.Text = _filesExcludedCount.ToString();
             _lastExcludedFileCountUpdate = DateTime.UtcNow;
         }
 
@@ -191,8 +226,8 @@ public partial class ResultsControl : UserControl
     }
     public void SetTotalFileCount(int totalFiles)
     {
-        _totalFiles = totalFiles;
-        tsTotal.Text = _totalFiles.ToString();
+        _totalFilesCount = totalFiles;
+        tsTotal.Text = _totalFilesCount.ToString();
     }
 
 
@@ -205,10 +240,10 @@ public partial class ResultsControl : UserControl
 
         // order the results sort of based on the file system... helps keep results more coherent for now
         //   also save off the new index of the record that is currently selected
-        _results = _results.OrderBy(r => r.FilePath).ToList();
+        _filesMatching = _filesMatching.OrderBy(r => r.FilePath).ToList();
         int selectedIndex = -1;
         if (!string.IsNullOrWhiteSpace(_selectedFilePath))
-            selectedIndex = _results.FindIndex(r => r.FilePath == _selectedFilePath);
+            selectedIndex = _filesMatching.FindIndex(r => r.FilePath == _selectedFilePath);
 
 
         // Rebuild the file result list from scratch
@@ -219,15 +254,17 @@ public partial class ResultsControl : UserControl
         lvFiles.BeginUpdate();
         lvFiles.Items.Clear();
         int fileCount = 1;
-        foreach (var res in _results)
+        foreach (var res in _filesMatching)
         {
-            string[] rowValues = {fileCount.ToString()
-            , res.FileName
-            , string.Join(",", res.FoundTerms).Trim(',')
-            , res.LineResults.Count.ToString()
-            , res.MatchCount.ToString()
-            , res.FilePath.Replace(_rootDir, "...\\")
-            , res.FilePath };
+            string[] rowValues = {
+                fileCount.ToString()
+                , res.FileName
+                , string.Join(",", res.FoundTerms).Trim(',')
+                , res.LineResults.Count.ToString()
+                , res.MatchCount.ToString()
+                , res.FilePath.Replace(_rootDir, "...\\")
+                , res.FilePath
+            };
 
             lvFiles.Items.Add(new ListViewItem(rowValues));
 
@@ -284,7 +321,7 @@ public partial class ResultsControl : UserControl
         rtDetails.Clear();
 
         // lookup what item we are displaying details for by its unique filePath
-        var fileResults = _results.FirstOrDefault(r => r.FilePath == filePath);
+        var fileResults = _filesMatching.FirstOrDefault(r => r.FilePath == filePath);
         if (fileResults is null)
             return;
 
@@ -319,11 +356,6 @@ public partial class ResultsControl : UserControl
         rtDetails.ResumeLayout();
         rtDetails.PerformLayout();
     }
-    public void Details_SetText(string text)
-    {
-        rtDetails.Clear();
-        rtDetails.Text = text;
-    }
 
     private void lvFiles_SelectedIndexChanged(object? sender, EventArgs e)
     {
@@ -340,24 +372,24 @@ public partial class ResultsControl : UserControl
 
     private void CmsButtonCopyAllFilePaths_Click(object? sender, EventArgs e)
     {
-        Clipboard.SetText(string.Join(Environment.NewLine, _results.Select(r => r.FilePath)));
+        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FilePath)));
     }
     private void CmsButtonCopyAllFileNames_Click(object? sender, EventArgs e)
     {
-        Clipboard.SetText(string.Join(Environment.NewLine, _results.Select(r => r.FileName)));
+        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FileName)));
     }
 
     private void CmsButtonCopySelectedFileName_Click(object? sender, EventArgs e)
     {
         string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
-        var selectedFile = _results.FirstOrDefault(r => r.FilePath == selectedFilePath);
+        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
         if (selectedFile != null)
             Clipboard.SetText(selectedFile.FileName);
     }
     private void CmsButtonCopySelectedFilePath_Click(object? sender, EventArgs e)
     {
         string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
-        var selectedFile = _results.FirstOrDefault(r => r.FilePath == selectedFilePath);
+        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
         if (selectedFile != null)
             Clipboard.SetText(selectedFile.FilePath);
     }
@@ -390,5 +422,24 @@ public partial class ResultsControl : UserControl
     {
         // make sure the results expand and contract along with the window
         AdjustFileResultColumnWidths();
+    }
+
+    private void tsErrorsLink_Click(object sender, EventArgs e)
+    {
+        // if the user is already viewing the error display... dont show another
+        if (_errDisplay is not null)
+            return;
+
+
+        // Initialize a new Error Display and show it to the user
+        _errDisplay = new ErrorDisplay(_rootDir, _filesWithErrors);
+        _errDisplay.FormClosed += _errDisplay_FormClosed;
+        _errDisplay.Show();
+    }
+
+    private void _errDisplay_FormClosed(object? sender, FormClosedEventArgs e)
+    {
+        _errDisplay?.Dispose();
+        _errDisplay = null;
     }
 }

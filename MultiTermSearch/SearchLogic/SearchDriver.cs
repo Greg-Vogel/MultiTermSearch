@@ -1,7 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Security.AccessControl;
 using MultiTermSearch.Classes;
 using MultiTermSearch.Events;
 using MultiTermSearch.Helpers;
@@ -17,10 +14,6 @@ internal class SearchDriver
     private CancellationTokenSource _cancellationTokenSource = null!;
 
     public string SearchPath { get; private set; } = string.Empty;
-
-    private int _skippedFileCount = 0;
-    private int _scannedFileCount = 0;
-
 
     internal event EventHandler<FileListIdentifiedEventArgs>? FileListIdentifiedEvent;
     internal event EventHandler<ItemAddedEventArgs>? FileProcessedEvent;
@@ -57,8 +50,6 @@ internal class SearchDriver
 
         // start the actual search
         ClearHelpers();
-        _skippedFileCount = 0;
-        _scannedFileCount = 0;
         _searchInProgress = true;
         _driver.RunWorkerAsync(inputs);
     }
@@ -134,6 +125,9 @@ internal class SearchDriver
         if (e.Argument is not SearchInputs inputs)
             return;
 
+        // Make sure the result is clear... it will only be set in the case of an global exception
+        e.Result = null;
+
 
         // Pre-compile all of the regex queries we will need to hopefully more efficiently search through files
         //   The helper stores them in a static collection easily accessible by all threads 
@@ -181,25 +175,20 @@ internal class SearchDriver
                             if (cancelToken.IsCancellationRequested)
                                 return;
 
-                            // For now... if we did not have access to the file, count it as skipped
-                            if (result is not null && result.AccessDenied)
-                                _driver.ReportProgress(0);
-                            else
-                                _driver.ReportProgress(1, result);
+                            // Report the result out to any result display/consumer
+                            _driver.ReportProgress(1, result);
                         }
                     }
                 ).Wait();
         }
-        catch (Exception) 
-        { 
-            // dont give a crap what error it is
+        catch (Exception ex) 
+        {
+            e.Result = ex;
         }
-
-        // Once the above ForEachAsync returns... the queue should be exhausted and all threads returned/completed.
-        //   We can just let the method return
     }
 
     private static EventArgs _skippedArgs = new EventArgs();
+
     private static ItemAddedEventArgs _emptyResultArgs = new ItemAddedEventArgs();
     private void SearchDriver_Report(object? sender, ProgressChangedEventArgs e)
     {
@@ -212,9 +201,10 @@ internal class SearchDriver
 
             // A '1' means the file was at least scanned
             case 1:
-                FileProcessedEvent?.Invoke(this, e.UserState is null 
-                    ? _emptyResultArgs 
-                    : new ItemAddedEventArgs((FileResult?)e.UserState));
+                FileProcessedEvent?.Invoke(this
+                    , e.UserState is null 
+                        ? _emptyResultArgs 
+                        : new ItemAddedEventArgs((FileResult?)e.UserState));
                 break;
         }
     }
