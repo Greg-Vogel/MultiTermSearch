@@ -5,6 +5,7 @@ public class FileResult
     public string FilePath { get; set; } = null!;
     public string? Error { get; set; } = null;
     public List<LineResult> LineResults { get; set; } = new List<LineResult>();
+    public bool HasResult => LineResults.Any();
 
     public FileResult(string filePath) { FilePath = filePath; }
     public FileResult(string filePath, string errorMessage)

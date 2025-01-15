@@ -336,7 +336,7 @@ public partial class ResultsControl : UserControl
         string lineToAdd = string.Empty;
         foreach (var line in fileResults.LineResults)
         {
-            lineHeader = string.Format("{0}: ", line.LineNumber.ToString().PadLeft(maxLineNumLength, ' '));
+            lineHeader = string.Format("{0}: ", line.LineNumber == 0 ? "File Name" : line.LineNumber.ToString().PadLeft(maxLineNumLength, ' '));
             lineStartIndex += lineHeader.Length;
 
             lineToAdd = string.Format("{0}{1}{2}", lineHeader, line.Line, Environment.NewLine);

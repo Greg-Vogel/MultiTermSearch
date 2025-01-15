@@ -3,7 +3,7 @@ using MultiTermSearch.Helpers;
 
 namespace MultiTermSearch.SearchLogic;
 
-internal static class ContentSearchLogic
+internal static class FileContentSearchLogic
 {
     /// <summary>
     /// Scans a files contents by reading it via a stream line by line analyzing if each line meets the criteria.
@@ -12,9 +12,12 @@ internal static class ContentSearchLogic
     /// <param name="inputs"></param>
     /// <param name="cancelToken"></param>
     /// <returns></returns>
-    public static async Task<FileResult?> ScanFileContents(string filePath, SearchInputs inputs, CancellationToken cancelToken)
+    public static async Task<FileResult> ScanFileContents(FileResult result, string filePath, SearchInputs inputs, CancellationToken cancelToken)
     {
-        return await Task.Run(() =>
+        if (result is null)
+            result = new FileResult(filePath);
+
+        return await Task.Run(() => 
         {
             try
             {
@@ -22,7 +25,6 @@ internal static class ContentSearchLogic
                 using var streamReader = new StreamReader(File.OpenRead(filePath));
 
                 // loop though the file line by line
-                FileResult? result = null;
                 int lineNum = 0;
                 while (streamReader.Peek() >= 0 && !cancelToken.IsCancellationRequested)
                 {
@@ -34,7 +36,7 @@ internal static class ContentSearchLogic
                     var line = streamReader.ReadLine()!;
 
                     if (cancelToken.IsCancellationRequested)
-                        return null;
+                        return result;
 
                     // check the line against each pre-compiled regex to see if we find a match
                     foreach (var regex in RegexHelper.CompiledRegex)
@@ -47,7 +49,7 @@ internal static class ContentSearchLogic
                             continue;
 
                         if (cancelToken.IsCancellationRequested)
-                            return null;
+                            return result;
 
                         // if this is the first matching term for this line, create a new result obj for it
                         if (lineResult == null)
@@ -62,7 +64,7 @@ internal static class ContentSearchLogic
                     }
 
                     if (cancelToken.IsCancellationRequested)
-                        return null;
+                        return result;
 
 
                     // if we did not find anything for this line... move on
@@ -76,26 +78,21 @@ internal static class ContentSearchLogic
                         continue;
 
 
-                    // if this is the first line to have a result, instantiate the file result obj to hold it
-                    if (result == null)
-                        result = new FileResult(filePath);
-
-
                     // We made it here... so we have a valid line result to include... so add it to our FileResult
                     result.AddLineResult(lineResult);
                 }
 
 
                 // we did not find any lines... just stop here
-                if (result is null)
-                    return null;
+                if (!result.HasResult)
+                    return result;
 
 
                 // If the user specified that the file itself must contain all search terms to be included....
                 //    make sure our FileResult has at least one match for each term
                 //    If not... just return null
                 if (inputs.Filters_FileContainsAll && result.FoundTerms.Count != RegexHelper.CompiledRegex.Length)
-                    return null;
+                    return result;
 
 
                 // We made it to the end with a valid file result... return it to the caller
@@ -103,7 +100,8 @@ internal static class ContentSearchLogic
             }
             catch (Exception ex)
             {
-                return new FileResult(filePath, ex.Message);
+                result.Error = ex.Message;
+                return result;
             }
         });
     }

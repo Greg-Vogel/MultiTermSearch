@@ -96,26 +96,23 @@ internal class SearchDriver
     /// <returns></returns>
     private async Task<FileResult?> ScanFileForMatch(string filePath, SearchInputs inputs, CancellationToken cancelToken)
     {
-        // 1. Check the file contents
-        if (inputs.Target == SearchInputs.ESearchTargets.FileContents || inputs.Target == SearchInputs.ESearchTargets.Both)
-        {
-            var result = await ContentSearchLogic.ScanFileContents(filePath, inputs, cancelToken);
+        var result = new FileResult(filePath);
 
-            // If we got a result here other than access denied... no need to check anything further, just return the results
-            if (result != null)
-                return result;
-        }
+        // 1. Quickly check the file name
+        if (inputs.Target == SearchInputs.ESearchTargets.FileNames || inputs.Target == SearchInputs.ESearchTargets.Both)
+            FileMetaDataSearchLogic.ScanFileName(ref result, filePath, cancelToken);
 
+        // exit early before possibly reading a giant file if we were told to cancel the search
         if (cancelToken.IsCancellationRequested)
             return null;
 
-        // 2. The contents did not have a match
-        //     If the user chose to include filenames check if the file name is a match
-        if (inputs.Target == SearchInputs.ESearchTargets.FileNames || inputs.Target == SearchInputs.ESearchTargets.Both)
-            return FileMetaDataSearchLogic.ScanFileName(filePath, cancelToken);
+        // 2. Check the file contents
+        if (inputs.Target == SearchInputs.ESearchTargets.FileContents || inputs.Target == SearchInputs.ESearchTargets.Both)
+            result = await FileContentSearchLogic.ScanFileContents(result, filePath, inputs, cancelToken);
 
-        // If we made it here... no scenario that was checked found anything
-        return null;
+        // if no results were found, just return a null up to the caller...
+        //   no need to waste its time with file data that doesnt match our criteria
+        return result.HasResult ? result : null;
     }
 
 

@@ -45,7 +45,7 @@ internal static class FileMetaDataSearchLogic
     /// <param name="filePath"></param>
     /// <param name="cancelToken"></param>
     /// <returns></returns>
-    public static FileResult? ScanFileName(string filePath, CancellationToken cancelToken)
+    public static void ScanFileName(ref FileResult result, string filePath, CancellationToken cancelToken)
     {
         string fileName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
 
@@ -53,7 +53,7 @@ internal static class FileMetaDataSearchLogic
         foreach (var regex in RegexHelper.CompiledRegex)
         {
             if (cancelToken.IsCancellationRequested)
-                return null;
+                return;
 
             // get the matches in this fileName for this search term
             var matches = regex.Matches(fileName);
@@ -77,13 +77,11 @@ internal static class FileMetaDataSearchLogic
 
         // If we did not get a matching file name... just stop here
         if (fileNameLineResult == null)
-            return null;
+            return;
 
 
         // If we got here... then we have a file name that meets our search criteria
         //    Add the filename as if it were a line result in the file so the display has something to count/show
-        var result = new FileResult(filePath);
         result.AddLineResult(fileNameLineResult);
-        return result;
     }
 }
