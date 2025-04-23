@@ -30,7 +30,7 @@ public partial class MTS : Form
         _searcher.FileProcessedEvent += Searcher_FileProcessedEvent;
         _searcher.SearchCompleteEvent += Searcher_SearchCompleteEvent;
         _searcher.FileSkppedEvent += Searcher_FileExcludedEvent;
-        
+
     }
     private void SetUIFields(MtsSettings settings)
     {
@@ -69,6 +69,7 @@ public partial class MTS : Form
             Options_IgnoreCase = chkIgnoreCase.Checked,
             Options_MatchWholeWord = chkWholeWord.Checked,
             Options_ExcludeLargeDirectories = chkExcludeLargeDir.Checked,
+            Options_ExcludeBinaries = chkExcludeBinaries.Checked,
             Filters_LineContainsAll = chkFilterLineContains.Checked,
             Filters_FileContainsAll = chkFilterFileContains.Checked,
             IncludeTypes = rtFileTypes.Lines.ToList().Where(l => !string.IsNullOrWhiteSpace(l)).ToArray(),
@@ -156,5 +157,69 @@ public partial class MTS : Form
         resultsControl1.SetSearchComplete();
         btnSearch.Text = "Search";
         btnSearch.Enabled = true;
+    }
+
+    private void btnResetTypes_Click(object sender, EventArgs e)
+    {
+        rtFileTypes.Clear();
+        rtFileTypes.Lines =
+        [
+            ".txt"
+            ,".cs"
+            ,".vb"
+            ,".sql"
+            ,".csproj"
+            ,".vbproj"
+            ,".config"
+            ,".sqlproj"
+            ,".sln"
+            ,".js"
+            ,".ts"
+            ,".c"
+            ,".cpp"
+            ,".py"
+            ,".htm"
+            ,".html"
+            ,".htmx"
+            ,".cshtml"
+            ,".ascx"
+            ,".aspx"
+            ,".ashx"
+            ,".asmx"
+            ,".asax"
+            ,".php"
+            ,".css"
+            ,".sitemap"
+            ,".ps1"
+            ,".psd1"
+            ,".psm1"
+            ,".json"
+            ,".xml"
+            ,".csv"
+            ,".yml"
+            ,".yaml"
+            ,".md"
+        ];
+    }
+
+
+
+    private void chkFilterLineContains_CheckedChanged(object sender, EventArgs e)
+    {
+        if (chkFilterFileContains.Checked)
+        {
+            chkFilterFileContains.CheckedChanged -= chkFilterFileContains_CheckedChanged!;
+            chkFilterFileContains.Checked = false;
+            chkFilterFileContains.CheckedChanged += chkFilterFileContains_CheckedChanged!;
+        }
+    }
+    private void chkFilterFileContains_CheckedChanged(object sender, EventArgs e)
+    {
+        if (chkFilterLineContains.Checked)
+        {
+            chkFilterLineContains.CheckedChanged -= chkFilterLineContains_CheckedChanged!;
+            chkFilterLineContains.Checked = false;
+            chkFilterLineContains.CheckedChanged += chkFilterLineContains_CheckedChanged!;
+        }
     }
 }

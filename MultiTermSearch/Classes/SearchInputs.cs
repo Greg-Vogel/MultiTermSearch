@@ -26,6 +26,7 @@ public class SearchInputs
     public StringComparison StringComparison { get; private set; }
 
     public bool Options_ExcludeLargeDirectories { get; set; }
+    public bool Options_ExcludeBinaries { get; set; }
 
     #endregion
 

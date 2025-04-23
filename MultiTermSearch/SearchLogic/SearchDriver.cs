@@ -74,14 +74,19 @@ internal class SearchDriver
         RegexHelper.ClearCompiledQueries();
     }
 
-    private bool SkipScanningFile(string filePath, SearchInputs inputs)
+    private bool SkipScanningFile(ref SearchInputs inputs, ref string filePath)
     {
         // 1. Check if we should exclude this file because of the directory it is in
-        if (FileMetaDataSearchLogic.ExcludeDirectory(filePath, inputs))
+        if (FileMetaDataSearchLogic.ExcludeDirectory(ref filePath))
             return true;
 
         // 2. Check file type
-        if (!FileMetaDataSearchLogic.IsValidFileType(filePath, inputs))
+        if (!FileMetaDataSearchLogic.IsValidFileType(ref inputs, ref filePath))
+            return true;
+
+        // 3. Check if we are supposed to skip this file type because we cannot read it
+        //     this is mainly when doing wildcard filetype search  .*
+        if (FileMetaDataSearchLogic.SkipBinaryFile(ref inputs, ref filePath))
             return true;
 
         return false;
@@ -90,25 +95,30 @@ internal class SearchDriver
     /// <summary>
     /// Performs the actual search logic of the files
     /// </summary>
-    /// <param name="filePath"></param>
     /// <param name="inputs"></param>
     /// <param name="compiledRegex"></param>
     /// <returns></returns>
-    private async Task<FileResult?> ScanFileForMatch(string filePath, SearchInputs inputs, CancellationToken cancelToken)
+    private async Task<FileResult?> ScanFileForMatch(SearchInputs inputs, string filePath, CancellationToken cancelToken)
     {
         var result = new FileResult(filePath);
 
-        // 1. Quickly check the file name
+        // Quickly check the file name
         if (inputs.Target == SearchInputs.ESearchTargets.FileNames || inputs.Target == SearchInputs.ESearchTargets.Both)
-            FileMetaDataSearchLogic.ScanFileName(ref result, filePath, cancelToken);
+            FileMetaDataSearchLogic.ScanFileName(ref result, ref inputs, cancelToken);
+
+        // if the file name was the only thing being searched... just return here
+        if (inputs.Target == SearchInputs.ESearchTargets.FileNames)
+            return result.HasResult ? result : null;
+
 
         // exit early before possibly reading a giant file if we were told to cancel the search
         if (cancelToken.IsCancellationRequested)
             return null;
 
-        // 2. Check the file contents
-        if (inputs.Target == SearchInputs.ESearchTargets.FileContents || inputs.Target == SearchInputs.ESearchTargets.Both)
-            result = await FileContentSearchLogic.ScanFileContents(result, filePath, inputs, cancelToken);
+        // Based on the inputs and search options the user wants to go ahead and scan the file contents
+        //    Scan it now
+        result = await FileContentSearchLogic.ScanFileContents(result, inputs, filePath, cancelToken);
+
 
         // if no results were found, just return a null up to the caller...
         //   no need to waste its time with file data that doesnt match our criteria
@@ -126,9 +136,12 @@ internal class SearchDriver
         e.Result = null;
 
 
-        // Pre-compile all of the regex queries we will need to hopefully more efficiently search through files
-        //   The helper stores them in a static collection easily accessible by all threads 
-        RegexHelper.CompileRegexQueries(inputs).Wait();
+        // Pre-compile all of the queries we will use to scan through files
+        //   doing this once upfront rather than part of the file loop below
+        //   Using this SearchValue approach instead of Regex because it is ALOT more efficient in both speed and memory
+        //      It does require some more nuanced logic around finding all matches and whole word searching, but worth it...
+        SearchValueHelper.CompileSearchValues(inputs.SearchTerms, inputs.Options_IgnoreCase);
+
 
 
         // Get the queue of files we need to scan
@@ -156,8 +169,8 @@ internal class SearchDriver
                             if (cancelToken.IsCancellationRequested)
                                 return;
 
-                            // If the file should be excluded from the scan... report back that we skipped one
-                            if (SkipScanningFile(file, inputs))
+                            // If the file should be excluded from the scan... report back that we skipped/excluded one
+                            if (SkipScanningFile(ref inputs, ref file))
                             {
                                 _driver.ReportProgress(0);
                                 continue;
@@ -167,7 +180,7 @@ internal class SearchDriver
                                 return;
 
                             // The file should be included... run through the actual scan logic
-                            var result = await ScanFileForMatch(file, inputs, cancelToken);
+                            var result = await ScanFileForMatch(inputs, file, cancelToken);
 
                             if (cancelToken.IsCancellationRequested)
                                 return;

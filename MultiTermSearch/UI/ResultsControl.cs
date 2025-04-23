@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics;
+using System.Text;
 using MultiTermSearch.Classes;
 using MultiTermSearch.UI;
 
@@ -10,26 +11,36 @@ public partial class ResultsControl : UserControl
     private List<FileResult> _filesMatching = new List<FileResult>();
     private List<FileResult> _filesWithErrors = new List<FileResult>();
     private string _rootDir = string.Empty;
+    private readonly Color _defaultBackColor;
     private Color _highlightColor = Color.Khaki;
     private int _millisecondRefreshFrequency = 50;   // this limits the UI from refreshing too often and making it non-responsive when trying to Cancel or view results
     private DateTime _lastFileResultUpdate = DateTime.UtcNow;
     private DateTime _lastExcludedFileCountUpdate = DateTime.UtcNow;
     private DateTime _lastScannedFileCountUpdate = DateTime.UtcNow;
+    private FileResult? _selectedFile = null;
     private string _selectedFilePath = string.Empty;
     private int _totalFilesCount = 0;
     private int _filesMatchingCount = 0;
     private int _filesExcludedCount = 0;
     private int _filesSearchedCount = 0;
     private int _filesWithErrorCount = 0;
+    private bool _showAllLines = false;
     private Stopwatch _searchTimer = new Stopwatch();
 
-    ToolStripButton cmsButtonCopySelectedFileName = null!;
-    ToolStripButton cmsButtonCopySelectedFilePath = null!;
-    ToolStripButton cmsButtonCopyAllFileNames = null!;
-    ToolStripButton cmsButtonCopyAllFilePaths = null!;
+    ToolStripButton cmsFiles_ButtonCopySelectedFileName = null!;
+    ToolStripButton cmsFiles_ButtonCopySelectedFilePath = null!;
+    ToolStripButton cmsFiles_ButtonCopyAllFileNames = null!;
+    ToolStripButton cmsFiles_ButtonCopyAllFilePaths = null!;
     ToolStripSeparator cmsSeparator = null!;
+    ToolStripButton cmsLines_ButtonOpenToLine = null!;
+    ToolStripButton cmsLines_ButtonCopyLine = null!;
+    ToolStripButton cmsLines_ButtonShowAllLines = null!;
 
     ErrorDisplay? _errDisplay = null;
+
+    private const string nppPath = @"C:\Program Files\Notepad++\notepad++.exe";
+    private bool nppExists => File.Exists(nppPath);
+    private const int _defaultLineLimit = 100;
 
 
     private enum ColIndexes
@@ -53,22 +64,37 @@ public partial class ResultsControl : UserControl
             .GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?
             .SetValue(lvFiles, true, null);
 
-        SetupContextMenuStrip();
+        _defaultBackColor = rtDetails.BackColor;
+
+        SetupContextMenuStrip_Files();
+        SetupContextMenuStrip_Lines();
     }
 
 
-    public void SetupContextMenuStrip()
+    public void SetupContextMenuStrip_Files()
     {
-        cmsButtonCopySelectedFileName = new ToolStripButton("Copy Selected File Name");
-        cmsButtonCopySelectedFilePath = new ToolStripButton("Copy Selected File Path");
-        cmsButtonCopyAllFileNames = new ToolStripButton("Copy All File Names");
-        cmsButtonCopyAllFilePaths = new ToolStripButton("Copy All File Paths");
+        cmsFiles_ButtonCopySelectedFileName = new ToolStripButton("Copy Selected File Name");
+        cmsFiles_ButtonCopySelectedFilePath = new ToolStripButton("Copy Selected File Path");
+        cmsFiles_ButtonCopyAllFileNames = new ToolStripButton("Copy All File Names");
+        cmsFiles_ButtonCopyAllFilePaths = new ToolStripButton("Copy All File Paths");
         cmsSeparator = new ToolStripSeparator();
 
-        cmsButtonCopySelectedFileName.Click += CmsButtonCopySelectedFileName_Click;
-        cmsButtonCopySelectedFilePath.Click += CmsButtonCopySelectedFilePath_Click;
-        cmsButtonCopyAllFileNames.Click += CmsButtonCopyAllFileNames_Click;
-        cmsButtonCopyAllFilePaths.Click += CmsButtonCopyAllFilePaths_Click;
+        cmsFiles_ButtonCopySelectedFileName.Click += CmsFilesButtonCopySelectedFileName_Click;
+        cmsFiles_ButtonCopySelectedFilePath.Click += CmsFilesButtonCopySelectedFilePath_Click;
+        cmsFiles_ButtonCopyAllFileNames.Click += CmsFilesButtonCopyAllFileNames_Click;
+        cmsFiles_ButtonCopyAllFilePaths.Click += CmsFilesButtonCopyAllFilePaths_Click;
+    }
+    public void SetupContextMenuStrip_Lines()
+    {
+        cmsLines_ButtonOpenToLine = new ToolStripButton(nppExists ? "Open File To Line" : "Open File");
+        cmsLines_ButtonCopyLine = new ToolStripButton("Copy Selected Line");
+        cmsSeparator = new ToolStripSeparator();
+        cmsLines_ButtonShowAllLines = new ToolStripButton("Show All Lines");
+        cmsLines_ButtonShowAllLines.Enabled = false;
+
+        cmsLines_ButtonOpenToLine.Click += CmsLinesButtonOpenToLine_Click;
+        cmsLines_ButtonCopyLine.Click += CmsLinesButtonCopyLine_Click;
+        cmsLines_ButtonShowAllLines.Click += CmsLinesButtonShowAllLines_Click;
     }
 
     public void SetSearchBegin(string rootSearchDir)
@@ -166,7 +192,7 @@ public partial class ResultsControl : UserControl
         // if the result was not null, then it is a match
         if (result is not null)
         {
-            if (result.Error is null)
+            if (result.ErrorMessage is null)
             {
                 _filesMatchingCount++;
                 _filesMatching.Add(result);
@@ -230,6 +256,24 @@ public partial class ResultsControl : UserControl
         tsTotal.Text = _totalFilesCount.ToString();
     }
 
+    private void OpenFile(string filePath, int openToLine = 1)
+    {
+        if (!File.Exists(filePath))
+            return;
+
+        // if we have a "better" editor installed go ahead and use it
+        if (nppExists)
+        {
+            var proc = new Process();
+            proc.StartInfo.FileName = nppPath;
+            proc.StartInfo.Arguments = $"-n{openToLine} {filePath}";
+            proc.Start();
+        }
+        else
+        {
+            Process.Start("notepad.exe", filePath);
+        }
+    }
 
 
     private void Results_UpdateFileList()
@@ -237,6 +281,8 @@ public partial class ResultsControl : UserControl
         // dont let the user click anything while we are in the middle of redrawing its parent
         cmsFiles.Hide();
         cmsFiles.Enabled = false;
+        cmsLines.Hide();
+        cmsLines.Enabled = false;
 
         // order the results sort of based on the file system... helps keep results more coherent for now
         //   also save off the new index of the record that is currently selected
@@ -291,6 +337,8 @@ public partial class ResultsControl : UserControl
         // turn the context menu strip back on now that we are done updating its parent
         cmsFiles.Enabled = true;
         lvFiles.ContextMenuStrip = cmsFiles;
+        cmsLines.Enabled = true;
+        rtDetails.ContextMenuStrip = cmsLines;
     }
 
     private void AdjustFileResultColumnWidths()
@@ -315,47 +363,82 @@ public partial class ResultsControl : UserControl
             lvFiles.Columns[(int)ColIndexes.ShortFilePath].Width += (lvFiles.Width - currentColWidth - borderBuffer);
     }
 
-
-    private void Details_UpdateFileDetails(string filePath)
+    private void Details_UpdateFileDetails()
     {
         rtDetails.Clear();
 
-        // lookup what item we are displaying details for by its unique filePath
-        var fileResults = _filesMatching.FirstOrDefault(r => r.FilePath == filePath);
-        if (fileResults is null)
+        if (_selectedFile is null)
+        {
+            rtDetails.ResumeLayout();
+            rtDetails.PerformLayout();
             return;
+        }
+        if (_selectedFile.LineResults.Count <= _defaultLineLimit)
+        {
+            cmsLines_ButtonShowAllLines.Enabled = false;
+        }
+        else
+        {
+            cmsLines_ButtonShowAllLines.Enabled = !_showAllLines;
+        }
 
-        int maxLineNumLength = fileResults.LineResults.Last().LineNumber.ToString().Length;
+
+        int maxLineNumLength = _selectedFile.LineResults.Last().LineNumber.ToString().Length;
 
         // loop through line by line adding the lines that had matches to the display
-        //   Also record indexes and ranges to highlight later
         rtDetails.SuspendLayout();
         var highlights = new Dictionary<int, int>();
         int lineStartIndex = 0;
         string lineHeader = string.Empty;
         string lineToAdd = string.Empty;
-        foreach (var line in fileResults.LineResults)
+        int lineCount = 0;
+        foreach (var line in _selectedFile.LineResults)
         {
-            lineHeader = string.Format("{0}: ", line.LineNumber == 0 ? "File Name" : line.LineNumber.ToString().PadLeft(maxLineNumLength, ' '));
-            lineStartIndex += lineHeader.Length;
-
-            lineToAdd = string.Format("{0}{1}{2}", lineHeader, line.Line, Environment.NewLine);
-
-            rtDetails.AppendText(lineToAdd);
-
-            foreach (var term in line.TermResults)
+            if (line.LineNumber == 0)
             {
-                foreach (var index in term.IndexOfMatches)
+                // if the first record is LineNumber 0, that means the file name matched and we are displaying it
+                lineHeader = "File Name";
+            }
+            else
+            {
+                // this is a normal file content line, just prepend the current line number
+                lineHeader = line.LineNumber.ToString().PadLeft(maxLineNumLength, ' ');
+            }
+            lineStartIndex += lineHeader.Length + 2;
+
+
+            // Add the actual line to the control
+            rtDetails.AppendText($"{lineHeader}: {line.Line}{Environment.NewLine}");
+
+            // Loop through each match and select it, then apply the highlighting color to it
+            foreach (var term in line.TermResults.Keys)
+            {
+                foreach (var index in line.TermResults[term])
                 {
-                    rtDetails.Select(lineStartIndex + index, term.Term.Length);
+                    rtDetails.Select(lineStartIndex + index, term.Length);
                     rtDetails.SelectionBackColor = _highlightColor;
                 }
             }
+
+            //rtDetails.Select(rtDetails.Text.Length - 1, 1);
+            //rtDetails.SelectionBackColor = _defaultBackColor;
             lineStartIndex = rtDetails.Text.Length;
+
+            // we have displayed the current line and highlighted accordingly...
+            //   now check if the user wants to display all additional lines or if they want to stop at the default limit
+            lineCount++;
+            if (lineCount >= _defaultLineLimit && !_showAllLines)
+            {
+                rtDetails.AppendText($"{Environment.NewLine}(Displaying first {_defaultLineLimit} lines...)");
+                break;
+            }
         }
+
+        rtDetails.Select(rtDetails.Text.Length - 1, 1);
+        rtDetails.SelectionBackColor = _defaultBackColor;
         rtDetails.ResumeLayout();
-        rtDetails.PerformLayout();
     }
+
 
     private void lvFiles_SelectedIndexChanged(object? sender, EventArgs e)
     {
@@ -365,56 +448,101 @@ public partial class ResultsControl : UserControl
         // we should have a single record if we are here
         var item = lvFiles.SelectedItems[0];
         _selectedFilePath = item.SubItems[(int)ColIndexes.FullFilePath].Text;
+        _selectedFile = _filesMatching.FirstOrDefault(f => f.FilePath == _selectedFilePath)!;
+        _showAllLines = false;
 
-        Details_UpdateFileDetails(_selectedFilePath);
+
+        Details_UpdateFileDetails();
     }
-
-
-    private void CmsButtonCopyAllFilePaths_Click(object? sender, EventArgs e)
+    private void lvFiles_DoubleClick(object sender, EventArgs e)
     {
-        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FilePath)));
-    }
-    private void CmsButtonCopyAllFileNames_Click(object? sender, EventArgs e)
-    {
-        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FileName)));
+        OpenFile(_selectedFilePath);
     }
 
-    private void CmsButtonCopySelectedFileName_Click(object? sender, EventArgs e)
-    {
-        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
-        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
-        if (selectedFile != null)
-            Clipboard.SetText(selectedFile.FileName);
-    }
-    private void CmsButtonCopySelectedFilePath_Click(object? sender, EventArgs e)
-    {
-        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
-        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
-        if (selectedFile != null)
-            Clipboard.SetText(selectedFile.FilePath);
-    }
-    private void CmsButtonCopySelectedFileResults_Click(object? sender, EventArgs e)
-    {
-        throw new NotImplementedException();
-    }
+
 
     private void cmsFiles_Opening(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        e.Cancel = false; // set this here so the cms shows on the first click
         cmsFiles.Items.Clear();
 
         if (lvFiles.SelectedItems.Count > 0)
         {
-            cmsFiles.Items.Add(cmsButtonCopySelectedFileName);
-            cmsFiles.Items.Add(cmsButtonCopySelectedFilePath);
+            cmsFiles.Items.Add(cmsFiles_ButtonCopySelectedFileName);
+            cmsFiles.Items.Add(cmsFiles_ButtonCopySelectedFilePath);
         }
 
         if (lvFiles.Items.Count > 0)
         {
             if (cmsFiles.Items.Count > 0)
                 cmsFiles.Items.Add(cmsSeparator);
-            cmsFiles.Items.Add(cmsButtonCopyAllFileNames);
-            cmsFiles.Items.Add(cmsButtonCopyAllFilePaths);
+            cmsFiles.Items.Add(cmsFiles_ButtonCopyAllFileNames);
+            cmsFiles.Items.Add(cmsFiles_ButtonCopyAllFilePaths);
         }
+    }
+    private void CmsFilesButtonCopyAllFilePaths_Click(object? sender, EventArgs e)
+    {
+        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FilePath)));
+    }
+    private void CmsFilesButtonCopyAllFileNames_Click(object? sender, EventArgs e)
+    {
+        Clipboard.SetText(string.Join(Environment.NewLine, _filesMatching.Select(r => r.FileName)));
+    }
+    private void CmsFilesButtonCopySelectedFileName_Click(object? sender, EventArgs e)
+    {
+        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
+        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
+        if (selectedFile != null)
+            Clipboard.SetText(selectedFile.FileName);
+    }
+    private void CmsFilesButtonCopySelectedFilePath_Click(object? sender, EventArgs e)
+    {
+        string selectedFilePath = lvFiles.SelectedItems[0].SubItems[(int)ColIndexes.FullFilePath].Text;
+        var selectedFile = _filesMatching.FirstOrDefault(r => r.FilePath == selectedFilePath);
+        if (selectedFile != null)
+            Clipboard.SetText(selectedFile.FilePath);
+    }
+
+
+
+    private void cmsLines_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        e.Cancel = false;  // set this here so the cms shows on the first click
+        cmsLines.Items.Clear();
+
+        if (_selectedFile is null)
+            return;
+
+        if (!_selectedFile.LineResults.Any())
+            return;
+
+        cmsLines.Items.Add(cmsLines_ButtonOpenToLine);
+        cmsLines.Items.Add(cmsLines_ButtonCopyLine);
+        cmsLines.Items.Add(cmsSeparator);
+        cmsLines.Items.Add(cmsLines_ButtonShowAllLines);
+    }
+    private void CmsLinesButtonOpenToLine_Click(object? sender, EventArgs e)
+    {
+        if (_selectedFile is null)
+            return;
+        int charIndexOfCursor = rtDetails.GetCharIndexFromPosition(Cursor.Position);
+        int lineOfCursor = rtDetails.GetLineFromCharIndex(charIndexOfCursor);
+        int fileLineFromResultLine = _selectedFile.LineResults[lineOfCursor].LineNumber;
+        OpenFile(_selectedFilePath, fileLineFromResultLine);
+
+    }
+    private void CmsLinesButtonCopyLine_Click(object? sender, EventArgs e)
+    {
+        if (_selectedFile is null)
+            return;
+        int charIndexOfCursor = rtDetails.GetCharIndexFromPosition(Cursor.Position);
+        int lineOfCursor = rtDetails.GetLineFromCharIndex(charIndexOfCursor);
+        Clipboard.SetText(_selectedFile.LineResults[lineOfCursor].Line);
+    }
+    private void CmsLinesButtonShowAllLines_Click(object? sender, EventArgs e)
+    {
+        _showAllLines = true;
+        Details_UpdateFileDetails();
     }
 
 
@@ -442,4 +570,5 @@ public partial class ResultsControl : UserControl
         _errDisplay?.Dispose();
         _errDisplay = null;
     }
+
 }

@@ -36,7 +36,7 @@ namespace MultiTermSearch.UI
                     fileCount.ToString()
                     , err.FileName
                     , _rootDir is null ? err.FilePath : err.FilePath.Replace(_rootDir, "...\\")
-                    , err.Error!
+                    , err.ErrorMessage!
                 };
 
                 lvErrors.Items.Add(new ListViewItem(rowValues));

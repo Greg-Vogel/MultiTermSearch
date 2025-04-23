@@ -1,21 +1,23 @@
 ﻿using MultiTermSearch.Classes;
 using MultiTermSearch.Helpers;
+using System.Buffers;
 
 namespace MultiTermSearch.SearchLogic;
 
 internal static class FileContentSearchLogic
 {
-    private const int _fileLineBatchSize = 100;
+    private const int _fileLineBatchSize = 1_000;
 
     /// <summary>
     /// Scans a files contents by reading it via a stream line by line analyzing if each line meets the criteria.
     /// </summary>
-    /// <param name="filePath"></param>
     /// <param name="inputs"></param>
     /// <param name="cancelToken"></param>
     /// <returns></returns>
-    public static async Task<FileResult> ScanFileContents(FileResult result, string filePath, SearchInputs inputs, CancellationToken cancelToken)
+    public static async Task<FileResult> ScanFileContents(FileResult result, SearchInputs inputs, string filePath, CancellationToken cancelToken)
     {
+        // if another search was run on the file we might already have a FileResult obj created
+        //    if not... initialize it now
         if (result is null)
             result = new FileResult(filePath);
 
@@ -74,20 +76,21 @@ internal static class FileContentSearchLogic
                     return result;
 
                 // loop through all completed tasks and aggregate the results back together
+                var tempLines = new List<LineResult>();
                 foreach (var bt in batchTasks)
                 {
                     var bResult = bt.Result;
                     if (bt.IsCompleted && bResult is not null)
                     {
                         if (bResult.LineResults.Any())
-                            result.LineResults.AddRange(bResult.LineResults);
+                            result.AddLineResults(bResult.LineResults);
                         if (!string.IsNullOrWhiteSpace(bResult.Error))
-                            result.Error = bResult.Error;
+                            result.ErrorMessage = bResult.Error;
                         continue;
                     }
                     if (bt.IsFaulted)
                     {
-                        result.Error = bt.Exception.Message;
+                        result.ErrorMessage = bt.Exception.Message;
                     }
                 }
 
@@ -98,9 +101,12 @@ internal static class FileContentSearchLogic
 
                 // If the user specified that the file itself must contain all search terms to be included....
                 //    make sure our FileResult has at least one match for each term
-                //    If not... just return null
-                if (inputs.Filters_FileContainsAll && result.FoundTerms.Count != RegexHelper.CompiledRegex.Length)
+                //    If not... just return the empty result
+                if (inputs.Filters_FileContainsAll && result.FoundTerms.Count != inputs.SearchTerms.Count())
+                {
+                    result.LineResults.Clear();
                     return result;
+                }
 
 
                 // We made it to the end with a valid file result... return it to the caller
@@ -108,7 +114,7 @@ internal static class FileContentSearchLogic
             }
             catch (Exception ex)
             {
-                result.Error = ex.Message;
+                result.ErrorMessage = ex.Message;
                 return result;
             }
         });
@@ -119,37 +125,79 @@ internal static class FileContentSearchLogic
     {
         var batchResult = new BatchResult();
 
+
+        // Loop through each line of the batch
+        //    check it against each search term individually to pull out all matching indexes
+        //    once you have the list of indexes, add them to the result line result and move on to the next search term
         LineResult? lineResult;
+        List<int> matchIndexes = new List<int>();
+        var comparisonOption = inputs.Options_IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        int trimmedLength = 0;
+        int idx;
+        List<int> wordMatches;
         foreach (var lineRecord in lines)
         {
+            var fullLine = lineRecord.Line.AsSpan();
+
+            // do a quick and dirty check to see if a line contains any of the values we are looking for...
+            //   if it does, then we will do further work to identify the positions of all matches
+            //   I know scanning more than once seems not ideal...
+            //      but using the SearchValues class, it cuts down scanning time by nearly 75% in our benchmarking
+            //  this doesnt handle 'WholeWord' searches but it is still faster than nothing
+            if (!fullLine.ContainsAny(SearchValueHelper.SearchVals!))
+                continue;
+
+            // now loop through each search term and find all of its locations in this line
+            //    we will do this by:
+            //     1. finding the first instance, recording it
+            //     2. slicing that first part of the string containing the first character of our searchterm out
+            //     3. search for the next instance, and repeat until we find no more instances
+            //  doing all of this using spans so we are not allocating strings for all the slicing
             lineResult = null;
-
-            // check the line against each pre-compiled regex to see if we find a match
-            foreach (var regex in RegexHelper.CompiledRegex)
+            foreach (var searchTerm in inputs.SearchTerms)
             {
-                if (cancelToken.IsCancellationRequested)
-                    return null;
+                var term = searchTerm.AsSpan();
+                var line = fullLine;
+                trimmedLength = 0;
+                wordMatches = new List<int>();
 
-                // get the matches in this line of text for this search term
-                var matches = regex.Matches(lineRecord.Line!);
-
-                if (cancelToken.IsCancellationRequested)
-                    return null;
-
-                // if we didnt find any matches for this search term, move on
-                if (!matches.Any())
-                    continue;
-
-                // if this is the first matching term for this line, create a new result obj for it
-                if (lineResult is null)
-                    lineResult = new LineResult() { LineNumber = lineRecord.LineNum, Line = lineRecord.Line };
-
-                // Add the matches for this term to the line
-                lineResult.AddTermResult(new TermResult()
+                idx = line.IndexOf(term, comparisonOption);
+                while (idx != -1)
                 {
-                    Term = regex.SearchTerm,
-                    IndexOfMatches = matches.Select(m => m.Index).ToArray()
-                });
+                    // if the user chose to do a wholeword match
+                    //   if the leading or trailing characters are a number or letter we need to just move on
+                    //   slice the stirng and move on
+                    if (inputs.Options_MatchWholeWord
+                        && 
+                        (
+                            (idx > 0 && char.IsLetterOrDigit(line[idx-1])) // leading char check
+                            || (idx + term.Length < line.Length && char.IsLetterOrDigit(line[idx + term.Length]))) // trailling char check
+                        )
+                    {
+                        line = line.Slice(idx + 1);
+                        trimmedLength += idx + 1;
+                        idx = line.IndexOf(term, comparisonOption);
+                        continue;
+                    }
+
+                    // we made it here means we got a valid match!
+                    //   record the index and move on
+                    wordMatches.Add(idx + trimmedLength);
+                    line = line.Slice(idx + 1);
+                    trimmedLength += idx + 1;
+                    idx = line.IndexOf(term, comparisonOption);
+                }
+
+
+                // we finished checking the line for this term...
+                //   if we found anything, add it to our result now
+                if (wordMatches.Any())
+                {
+                    if (lineResult is null)
+                        lineResult = new LineResult() { LineNumber = lineRecord.LineNum, Line = lineRecord.Line! };
+
+                    lineResult.AddTermResults(searchTerm, wordMatches);
+                }
             }
 
             if (lineResult is null)
@@ -157,7 +205,7 @@ internal static class FileContentSearchLogic
 
             // If the user specified that a line must contain all search terms
             //    make sure the line has a found term count equal to the compiled regex list passed in
-            if (inputs.Filters_LineContainsAll && lineResult.FoundTerms.Count != RegexHelper.CompiledRegex.Length)
+            if (inputs.Filters_LineContainsAll && lineResult.FoundTerms.Count != inputs.SearchTerms.Length)
                 continue;
 
             if (lineResult is not null)

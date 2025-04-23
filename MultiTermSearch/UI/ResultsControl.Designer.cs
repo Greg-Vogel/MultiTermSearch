@@ -41,6 +41,7 @@
             cmsFiles = new ContextMenuStrip(components);
             panel1 = new Panel();
             rtDetails = new RichTextBox();
+            cmsLines = new ContextMenuStrip(components);
             statusStrip1 = new StatusStrip();
             tsProgress = new ToolStripProgressBar();
             tsStatus = new ToolStripStatusLabel();
@@ -101,6 +102,7 @@
             lvFiles.UseCompatibleStateImageBehavior = false;
             lvFiles.View = View.Details;
             lvFiles.SelectedIndexChanged += lvFiles_SelectedIndexChanged;
+            lvFiles.DoubleClick += lvFiles_DoubleClick;
             // 
             // columnHeader1
             // 
@@ -157,6 +159,7 @@
             // rtDetails
             // 
             rtDetails.BorderStyle = BorderStyle.None;
+            rtDetails.ContextMenuStrip = cmsLines;
             rtDetails.Dock = DockStyle.Fill;
             rtDetails.Font = new Font("Courier New", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             rtDetails.Location = new Point(1, 1);
@@ -165,8 +168,15 @@
             rtDetails.TabIndex = 0;
             rtDetails.Text = "";
             // 
+            // cmsLines
+            // 
+            cmsLines.Name = "cmsLines";
+            cmsLines.Size = new Size(61, 4);
+            cmsLines.Opening += cmsLines_Opening;
+            // 
             // statusStrip1
             // 
+            statusStrip1.BackColor = SystemColors.Control;
             statusStrip1.Items.AddRange(new ToolStripItem[] { tsProgress, tsStatus, tsErrorsLink, tsSep0, tsMatchesDesc, tsMatches, tsSep1, tsFilesScannedDesc, tsFilesScanned, tsSep2, tsExcludedDesc, tsExcluded, tsSep3, tsTotalDesc, tsTotal });
             statusStrip1.Location = new Point(0, 711);
             statusStrip1.Name = "statusStrip1";
@@ -329,5 +339,6 @@
         private ToolTip toolTip1;
         private ToolStripStatusLabel tsErrorsLink;
         private ToolStripStatusLabel tsSep0;
+        private ContextMenuStrip cmsLines;
     }
 }
