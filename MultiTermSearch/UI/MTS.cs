@@ -83,6 +83,47 @@ public partial class MTS : Form
         };
     }
 
+    private bool ValidSearchInputs(SearchInputs inputs)
+    {
+        var validationErrors = new List<string>();
+        if (inputs.IncludeTypes is null || inputs.IncludeTypes.Length == 0)
+        {
+            validationErrors.Add("File type is required, if you want to search all file types use '.*'");
+        }
+
+        if (string.IsNullOrWhiteSpace(inputs.Path)
+            || !Directory.Exists(inputs.Path))
+        {
+            validationErrors.Add("A valid folder path is required to start searching.");
+        }
+
+        if (inputs.SearchTerms is null || inputs.SearchTerms.Length == 0)
+        {
+            validationErrors.Add("A search term is required to start searching.");
+        }
+
+        if (inputs.SearchTerms!.Any(t=> t.Length < 3))
+        {
+            if (MessageBox.Show("Your search terms contains a term that is shorter than 3 characters.\nThis will greatly impact performance due to the potential number of results.\n\nAre you sure you want to continue?"
+                    , "Confirm Open Ended Search?"
+                    , MessageBoxButtons.YesNo)
+                != DialogResult.Yes)
+            {
+                return false;
+            }
+        }
+
+        if (validationErrors.Any())
+        {
+            string message = string.Empty;
+            validationErrors.ForEach(err => message += $"{err}{Environment.NewLine}");
+            MessageBox.Show(message, "Search Input Errors", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+
+        return true;
+    }
+
     private void StartSearch()
     {
         // Clear previous results
@@ -90,6 +131,13 @@ public partial class MTS : Form
 
         // Get the search inputs
         var inputs = GetInputsFromUI();
+
+        // Validate UI inputs to make sure they make sense before we save them off or start an open ended search
+        if (!ValidSearchInputs(inputs))
+        {
+            btnSearch.Enabled = true;
+            return;
+        }
 
         // Save these inputs as the last used settings
         //    kicking it off in a separate task that is not waited because it isnt important and holdup the search
@@ -126,7 +174,7 @@ public partial class MTS : Form
         btnSearch.Enabled = false;
 
         // If the searcher is already running... then this button click is to actually Cancel it
-        if (_searcher != null && _searcher.SearchInProgress)
+        if (_searcher is not null && _searcher.SearchInProgress)
         {
             _searcher.CancelSearchAsync();
             resultsControl1.SetSearchCancelling();
@@ -171,6 +219,8 @@ public partial class MTS : Form
             ,".csproj"
             ,".vbproj"
             ,".config"
+            ,".DotSettings"
+            ,".settings"
             ,".sqlproj"
             ,".sln"
             ,".js"
@@ -199,6 +249,10 @@ public partial class MTS : Form
             ,".yml"
             ,".yaml"
             ,".md"
+            ,".rdl"
+            ,".rdlc"
+            ,".cmd"
+            ,".bat"
         ];
     }
 
