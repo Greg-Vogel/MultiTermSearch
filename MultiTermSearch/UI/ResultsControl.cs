@@ -266,12 +266,12 @@ public partial class ResultsControl : UserControl
         {
             var proc = new Process();
             proc.StartInfo.FileName = nppPath;
-            proc.StartInfo.Arguments = $"-n{openToLine} {filePath}";
+            proc.StartInfo.Arguments = $"-n{openToLine} \"{filePath}\"";
             proc.Start();
         }
         else
         {
-            Process.Start("notepad.exe", filePath);
+            Process.Start("notepad.exe", $"\"{filePath}\"");
         }
     }
 
